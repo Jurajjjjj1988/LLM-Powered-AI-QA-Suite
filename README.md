@@ -1,6 +1,6 @@
 # LLM-Powered AI QA Suite
 
-A production-ready suite of AI-powered QA tools built on top of the **Claude API (Opus 4.6)**. Each tool solves a real problem in automated testing pipelines — generating tests, detecting flaky tests, healing broken selectors, and visualising quality metrics.
+A production-ready suite of **6 AI-powered QA tools** built on **Claude Opus 4.6** and the **Claude Agent SDK**. Each tool solves a real problem in automated testing pipelines — from generating tests and healing broken selectors, to debugging failures and generating GDPR-safe mock data.
 
 ---
 
@@ -70,22 +70,57 @@ python3 app.py
 
 ---
 
+---
+
+### `ai-debug-accelerator`
+Skráti MTTR (Mean Time To Resolution) — analyzuje Playwright zlyhania a generuje `ai_debug_report.md`.
+
+```bash
+cd ai-debug-accelerator
+python3 cli.py analyze playwright-report.json
+python3 cli.py analyze playwright-report.json --output-dir ./reports --open
+```
+
+- **Multi-agent pipeline** (mimo Claude Code): SDET subagent diagnostikuje, Code Review subagent validuje fixy
+- **Fallback**: priamy Anthropic API s SDET + Code Review promptami keď beží vnorene
+- Report obsahuje: summary tabuľku, root cause analýzu, konkrétne code fixy, OWASP security tipy
+
+---
+
+### `ai-mock-architect`
+Generuje syntetické, GDPR-safe testovacie dáta z OpenAPI/Swagger schémy.
+
+```bash
+cd ai-mock-architect
+python3 cli.py generate swagger.json
+python3 cli.py generate https://petstore.swagger.io/v2/swagger.json --output-dir ./mocks
+```
+
+- **Multi-agent pipeline**: Architect parsuje schému, SDET generuje dáta, Security audituje PII
+- Generuje **5 sád dát** na každý POST/PUT endpoint (happy path, boundary, edge cases, unicode)
+- Output kompatibilný s **Prism** a **Mockoon**
+- `@example.com` emaily, `+1-555-01xx` telefóny, fiktívne adresy — 100% GDPR-safe
+
+---
+
 ## Architecture
 
 ```
 ai-qa-projects/
-├── common/                  # Shared across all tools
-│   ├── claude_client.py     # Anthropic SDK wrapper (streaming, adaptive thinking, retries)
-│   ├── config.py            # Pydantic Settings (reads from .env)
-│   ├── database.py          # SQLAlchemy engine + session context managers
-│   ├── models.py            # ORM models (GeneratedTest, FlakyTestRun, HealedSelector)
-│   ├── schemas.py           # Pydantic request/response schemas
-│   ├── sanitizer.py         # Input validation and SHA-256 hashing
-│   └── exceptions.py        # Typed exception hierarchy
-├── ai-test-generator/
-├── ai-test-analyzer/
-├── ai-test-healer/
-├── ai-quality-dashboard/
+├── common/                      # Shared across tools 1-4
+│   ├── claude_client.py         # Anthropic SDK wrapper (streaming, adaptive thinking, retries)
+│   ├── config.py                # Pydantic Settings (reads from .env)
+│   ├── database.py              # SQLAlchemy engine + session context managers
+│   ├── models.py                # ORM models (GeneratedTest, FlakyTestRun, HealedSelector)
+│   ├── schemas.py               # Pydantic request/response schemas
+│   ├── sanitizer.py             # Input validation and SHA-256 hashing
+│   └── exceptions.py            # Typed exception hierarchy
+├── ai-test-generator/           # Tool 1 — Anthropic API
+├── ai-test-analyzer/            # Tool 2 — Anthropic API + structured outputs
+├── ai-test-healer/              # Tool 3 — Anthropic API
+├── ai-quality-dashboard/        # Tool 4 — FastAPI + SQLite
+├── ai-debug-accelerator/        # Tool 5 — Claude Agent SDK (SDET + Code Review subagents)
+├── ai-mock-architect/           # Tool 6 — Claude Agent SDK (Architect + SDET + Security subagents)
 └── pyproject.toml
 ```
 

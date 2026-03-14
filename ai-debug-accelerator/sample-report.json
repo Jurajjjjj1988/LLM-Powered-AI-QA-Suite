@@ -1,0 +1,68 @@
+{
+  "suites": [
+    {
+      "title": "Login Flow",
+      "specs": [
+        {
+          "title": "should redirect to dashboard after valid login",
+          "tests": [
+            {
+              "status": "failed",
+              "duration": 5200,
+              "error": {
+                "message": "TimeoutError: locator.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator('button[data-testid=\"submit\"]')\n  - element is not visible",
+                "stack": "TimeoutError: locator.click: Timeout 5000ms exceeded.\n    at LoginPage.clickSubmit (pages/LoginPage.ts:34)\n    at test (tests/login.spec.ts:22)"
+              }
+            }
+          ]
+        },
+        {
+          "title": "should show error on invalid credentials",
+          "tests": [
+            {
+              "status": "failed",
+              "duration": 3100,
+              "error": {
+                "message": "Error: expect(received).toBeVisible()\nExpected: visible\nReceived: hidden\n\nLocator: getByTestId('error-message')",
+                "stack": "Error: expect(received).toBeVisible()\n    at tests/login.spec.ts:45"
+              }
+            }
+          ]
+        },
+        {
+          "title": "should remember user session",
+          "tests": [
+            {
+              "status": "passed",
+              "duration": 1200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Checkout Flow",
+      "specs": [
+        {
+          "title": "should complete purchase with valid card",
+          "tests": [
+            {
+              "status": "failed",
+              "duration": 8900,
+              "error": {
+                "message": "AssertionError: expected 'Order #' to contain 'Confirmation'\nReceived: 'Payment Processing...'\n\nPossible race condition: page navigated before assertion.",
+                "stack": "AssertionError\n    at CheckoutPage.verifyConfirmation (pages/CheckoutPage.ts:89)\n    at tests/checkout.spec.ts:67"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "total": 4,
+    "passed": 1,
+    "failed": 3,
+    "duration": 18400
+  }
+}
