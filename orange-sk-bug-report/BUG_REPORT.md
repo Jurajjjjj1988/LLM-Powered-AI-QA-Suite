@@ -2,8 +2,6 @@
 
 > **Autor:** Juraj Kapusanský
 > **Dátum:** 14. 3. 2026
-> **Metodológia:** AI-Assisted Exploratory Analysis — bez manuálneho klikania, bez písania testov
-> **Stack:** Claude Opus 4.6 · WebFetch crawler · SDET / Security / Architect agent pipeline
 > **Repo:** [LLM-Powered-AI-QA-Suite](https://github.com/Jurajjjjj1988/LLM-Powered-AI-QA-Suite)
 
 ---
