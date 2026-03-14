@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI QA Quality Dashboard</title>
+
+  <!-- Plotly.js (CDN, no build required) -->
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" crossorigin="anonymous"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Header ─────────────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <a href="/" class="logo">
+        <span class="logo-icon">QA</span>
+        AI QA Suite
+      </a>
+      <div class="header-meta">
+        <span class="status-dot"></span>
+        <span>Live</span>
+        <span>Last refresh: <strong id="last-refresh">—</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main content ───────────────────────────────────────────────── -->
+  <main class="main-content">
+
+    <!-- Page title -->
+    <div class="page-title-bar">
+      <div>
+        <h1 class="page-title">Quality Dashboard</h1>
+        <p class="page-subtitle">Real-time insights from your AI-powered QA pipeline</p>
+      </div>
+      <button class="refresh-btn" id="refresh-btn">Refresh</button>
+    </div>
+
+    <!-- Error banner slot (filled dynamically) -->
+    <div id="summary-error"></div>
+
+    <!-- ── Summary cards ────────────────────────────────────────────── -->
+    <div class="cards-grid">
+      <div class="card card--blue">
+        <div class="card-label">Tests Generated</div>
+        <div class="card-value card-value--blue" id="stat-generated">
+          <span class="skeleton" style="width:60px;height:2rem;display:inline-block"></span>
+        </div>
+        <div class="card-sub">Total AI-generated test files</div>
+      </div>
+
+      <div class="card card--yellow">
+        <div class="card-label">Flaky Analysis Runs</div>
+        <div class="card-value card-value--yellow" id="stat-flaky-runs">
+          <span class="skeleton" style="width:60px;height:2rem;display:inline-block"></span>
+        </div>
+        <div class="card-sub">Total analysis sessions</div>
+      </div>
+
+      <div class="card card--yellow">
+        <div class="card-label">Avg Flaky Rate</div>
+        <div class="card-value card-value--yellow" id="stat-flaky-rate">
+          <span class="skeleton" style="width:80px;height:2rem;display:inline-block"></span>
+        </div>
+        <div class="card-sub">Across all detected flaky tests</div>
+      </div>
+
+      <div class="card card--purple">
+        <div class="card-label">Healed Selectors</div>
+        <div class="card-value card-value--purple" id="stat-healed">
+          <span class="skeleton" style="width:60px;height:2rem;display:inline-block"></span>
+        </div>
+        <div class="card-sub">Auto-repaired CSS selectors</div>
+      </div>
+    </div>
+
+    <!-- Sub-summary: last activity -->
+    <div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:2.5rem">
+      Last pipeline activity: <strong id="stat-last-activity" style="color:var(--text-primary)">—</strong>
+    </div>
+
+    <!-- ── Flaky Rate Trend ──────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">
+          Flaky Rate Trend
+          <span class="badge">30 days</span>
+        </h2>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-container" id="trend-chart"></div>
+      </div>
+    </div>
+
+    <!-- ── Generated Tests ──────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-header" data-section="generated">
+        <h2 class="section-title">
+          Generated Tests
+          <span class="badge">0</span>
+        </h2>
+      </div>
+      <div id="generated-error"></div>
+      <div class="table-panel">
+        <table class="data-table" id="generated-tests-table">
+          <thead>
+            <tr>
+              <th>Created</th>
+              <th>Framework</th>
+              <th>Requirement</th>
+              <th>Validation</th>
+              <th>Tokens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="5">
+                <span class="skeleton" style="width:100%;display:block;margin:.5rem 0"></span>
+                <span class="skeleton" style="width:80%;display:block;margin:.5rem 0"></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Flaky Tests ───────────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-header" data-section="flaky">
+        <h2 class="section-title">
+          Flaky Test Runs
+          <span class="badge">0</span>
+        </h2>
+      </div>
+      <div id="flaky-error"></div>
+      <div class="table-panel">
+        <table class="data-table" id="flaky-tests-table">
+          <thead>
+            <tr>
+              <th>Analyzed</th>
+              <th>Source</th>
+              <th>Total Tests</th>
+              <th>Flaky Rate</th>
+              <th>Flaky Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="5">
+                <span class="skeleton" style="width:100%;display:block;margin:.5rem 0"></span>
+                <span class="skeleton" style="width:75%;display:block;margin:.5rem 0"></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Healed Selectors ─────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-header" data-section="healed">
+        <h2 class="section-title">
+          Healed Selectors
+          <span class="badge">0</span>
+        </h2>
+      </div>
+      <div id="healed-error"></div>
+      <div class="table-panel">
+        <table class="data-table" id="healed-selectors-table">
+          <thead>
+            <tr>
+              <th>Healed At</th>
+              <th>Description</th>
+              <th>Old Selector</th>
+              <th>New Selector</th>
+              <th>Validation</th>
+              <th style="text-align:center">Applied</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="6">
+                <span class="skeleton" style="width:100%;display:block;margin:.5rem 0"></span>
+                <span class="skeleton" style="width:65%;display:block;margin:.5rem 0"></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────── -->
+  <footer class="app-footer">
+    AI QA Suite &mdash; Quality Dashboard &mdash; Data refreshes every 60 seconds
+  </footer>
+
+</div><!-- /.layout -->
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>

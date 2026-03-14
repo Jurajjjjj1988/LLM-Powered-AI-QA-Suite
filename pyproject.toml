@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qa-suite-common"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "anthropic>=0.28",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "SQLAlchemy>=2.0",
+    "tenacity>=8.3",
+    "python-dotenv>=1.0",
+    "python-json-logger>=2.0",
+    "cssselect>=1.2",
+    "click>=8.1",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["common*"]
