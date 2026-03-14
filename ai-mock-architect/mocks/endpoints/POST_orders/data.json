@@ -1,0 +1,136 @@
+{
+  "_meta": {
+    "endpoint": "POST /orders",
+    "gdprCompliance": {
+      "piiStatus": "CLEAN",
+      "strategy": "UUIDs are randomly generated v4 with no mapping to real users. Shipping addresses use fictional street names and non-existent zip codes. Product IDs are synthetic prefixed identifiers.",
+      "verifiedFields": {
+        "userId": "Synthetic UUID v4 — no mapping to any real user record",
+        "items[].productId": "Prefixed 'PROD-TEST-' — clearly synthetic",
+        "items[].quantity": "Arbitrary integers — no PII",
+        "items[].price": "Arbitrary decimals — no PII",
+        "shippingAddress.street": "Fictional street names (e.g., '123 Test Lane') — not real",
+        "shippingAddress.city": "Uses 'Testville', 'Mockton', etc. — fictional cities",
+        "shippingAddress.zipCode": "Uses 00000-prefix pattern — not assigned to real locations",
+        "shippingAddress.country": "Uses ISO codes but paired with fictional cities — non-attributable"
+      }
+    }
+  },
+  "datasets": [
+    {
+      "id": "order-001",
+      "description": "Happy path — single item order",
+      "body": {
+        "userId": "a1b2c3d4-0001-4000-8000-000000000001",
+        "items": [
+          {
+            "productId": "PROD-TEST-1001",
+            "quantity": 1,
+            "price": 29.99
+          }
+        ],
+        "shippingAddress": {
+          "street": "123 Test Lane",
+          "city": "Testville",
+          "zipCode": "00001",
+          "country": "XX"
+        }
+      }
+    },
+    {
+      "id": "order-002",
+      "description": "Happy path — multiple items order",
+      "body": {
+        "userId": "a1b2c3d4-0002-4000-8000-000000000002",
+        "items": [
+          {
+            "productId": "PROD-TEST-2001",
+            "quantity": 2,
+            "price": 15.50
+          },
+          {
+            "productId": "PROD-TEST-2002",
+            "quantity": 1,
+            "price": 99.00
+          },
+          {
+            "productId": "PROD-TEST-2003",
+            "quantity": 5,
+            "price": 4.99
+          }
+        ],
+        "shippingAddress": {
+          "street": "456 Mock Boulevard",
+          "city": "Mockton",
+          "zipCode": "00002",
+          "country": "XX"
+        }
+      }
+    },
+    {
+      "id": "order-003",
+      "description": "Boundary — quantity at minimum (1) and price at zero",
+      "body": {
+        "userId": "a1b2c3d4-0003-4000-8000-000000000003",
+        "items": [
+          {
+            "productId": "PROD-TEST-3001",
+            "quantity": 1,
+            "price": 0.00
+          }
+        ],
+        "shippingAddress": {
+          "street": "789 Synthetic Road",
+          "city": "Fakesburg",
+          "zipCode": "00003",
+          "country": "XX"
+        }
+      }
+    },
+    {
+      "id": "order-004",
+      "description": "Edge case — large quantity and high price values",
+      "body": {
+        "userId": "a1b2c3d4-0004-4000-8000-000000000004",
+        "items": [
+          {
+            "productId": "PROD-TEST-4001",
+            "quantity": 9999,
+            "price": 99999.99
+          }
+        ],
+        "shippingAddress": {
+          "street": "1 Boundary Drive Unit 9999",
+          "city": "Edgecaseton",
+          "zipCode": "00004",
+          "country": "XX"
+        }
+      }
+    },
+    {
+      "id": "order-005",
+      "description": "Edge case — unicode in address fields and fractional price",
+      "body": {
+        "userId": "a1b2c3d4-0005-4000-8000-000000000005",
+        "items": [
+          {
+            "productId": "PROD-TEST-5001",
+            "quantity": 3,
+            "price": 0.01
+          },
+          {
+            "productId": "PROD-TEST-5002",
+            "quantity": 1,
+            "price": 1234.56
+          }
+        ],
+        "shippingAddress": {
+          "street": "10 Ünïcödé Straße",
+          "city": "Tëstøpia",
+          "zipCode": "00005",
+          "country": "XX"
+        }
+      }
+    }
+  ]
+}

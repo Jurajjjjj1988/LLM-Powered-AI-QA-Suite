@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "endpoint": "PUT /products/{id}",
+    "gdprCompliance": {
+      "piiStatus": "CLEAN",
+      "strategy": "Product data contains no personally identifiable information by nature. All values are clearly synthetic product names, arbitrary prices, stock counts, and fictional category labels.",
+      "verifiedFields": {
+        "name": "Synthetic product names prefixed with 'TestProduct' — no PII",
+        "price": "Arbitrary numeric values — no PII",
+        "stock": "Arbitrary integer values — no PII",
+        "category": "Fictional category labels — no PII"
+      }
+    }
+  },
+  "datasets": [
+    {
+      "id": "product-update-001",
+      "description": "Happy path — all fields updated",
+      "pathParams": { "id": "PROD-TEST-1001" },
+      "body": {
+        "name": "TestProduct Alpha Widget",
+        "price": 49.99,
+        "stock": 150,
+        "category": "test-electronics"
+      }
+    },
+    {
+      "id": "product-update-002",
+      "description": "Partial update — only price and stock",
+      "pathParams": { "id": "PROD-TEST-2001" },
+      "body": {
+        "price": 9.99,
+        "stock": 500
+      }
+    },
+    {
+      "id": "product-update-003",
+      "description": "Boundary — price and stock at minimum (0)",
+      "pathParams": { "id": "PROD-TEST-3001" },
+      "body": {
+        "name": "TestProduct Clearance Gadget",
+        "price": 0,
+        "stock": 0,
+        "category": "test-clearance"
+      }
+    },
+    {
+      "id": "product-update-004",
+      "description": "Edge case — very long product name and high values",
+      "pathParams": { "id": "PROD-TEST-4001" },
+      "body": {
+        "name": "TestProduct With An Extremely Long Name For Boundary Testing Of Database Field Length Constraints Delta Edition v4",
+        "price": 99999.99,
+        "stock": 2147483647,
+        "category": "test-premium-long-category-name"
+      }
+    },
+    {
+      "id": "product-update-005",
+      "description": "Edge case — unicode characters in name and category",
+      "pathParams": { "id": "PROD-TEST-5001" },
+      "body": {
+        "name": "TestProduct Ünïcödé Édition",
+        "price": 19.95,
+        "stock": 42,
+        "category": "tëst-spëcîal"
+      }
+    }
+  ]
+}

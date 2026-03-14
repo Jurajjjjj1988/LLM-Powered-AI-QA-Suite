@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "endpoint": "POST /users/register",
+    "gdprCompliance": {
+      "piiStatus": "CLEAN",
+      "strategy": "All fields use RFC-2606 reserved domains (@example.com), NANP fictional phone prefixes (555-01xx), obviously synthetic names, and non-attributable dates. No real person can be identified from this data.",
+      "verifiedFields": {
+        "email": "Uses @example.com (IANA reserved, RFC 2606) — not routable, not real",
+        "password": "Synthetic test strings — not reused from any breach corpus",
+        "firstName": "Prefixed with 'Synthetic' or 'Test' — clearly non-real",
+        "lastName": "Suffixed with ordinal identifiers — clearly non-real",
+        "dateOfBirth": "Arbitrary dates with no link to real individuals",
+        "phone": "+1-555-01xx range reserved by NANP for fictional use"
+      }
+    }
+  },
+  "datasets": [
+    {
+      "id": "register-001",
+      "description": "Happy path — all required and optional fields provided",
+      "body": {
+        "email": "synthetic.alpha@example.com",
+        "password": "T3stP@ss!_001",
+        "firstName": "SyntheticAlpha",
+        "lastName": "TestuserOne",
+        "dateOfBirth": "1990-01-15",
+        "phone": "+1-555-0101"
+      }
+    },
+    {
+      "id": "register-002",
+      "description": "Happy path — only required fields, no optional fields",
+      "body": {
+        "email": "synthetic.bravo@example.com",
+        "password": "Br@voPass_002",
+        "firstName": "SyntheticBravo",
+        "lastName": "TestuserTwo"
+      }
+    },
+    {
+      "id": "register-003",
+      "description": "Boundary — password at exact minimum length (8 chars)",
+      "body": {
+        "email": "synthetic.charlie@example.com",
+        "password": "Ch@r!ie8",
+        "firstName": "SyntheticCharlie",
+        "lastName": "TestuserThree",
+        "dateOfBirth": "2000-12-31",
+        "phone": "+1-555-0103"
+      }
+    },
+    {
+      "id": "register-004",
+      "description": "Edge case — unicode characters in name fields",
+      "body": {
+        "email": "synthetic.delta@example.com",
+        "password": "D3lt@Pass_004!",
+        "firstName": "SyntheticDeltaÉ",
+        "lastName": "TestuserFöur",
+        "dateOfBirth": "1985-06-15",
+        "phone": "+1-555-0104"
+      }
+    },
+    {
+      "id": "register-005",
+      "description": "Edge case — very long password and name values",
+      "body": {
+        "email": "synthetic.echo@example.com",
+        "password": "Ech0_P@ssword!_ThatIsDeliberatelyLong_005_XXXXXXXXXX",
+        "firstName": "SyntheticEchoWithAnExtremelyLongFirstNameForBoundaryTesting",
+        "lastName": "TestuserFiveWithAnExtremelyLongLastNameForBoundaryTesting",
+        "dateOfBirth": "1970-01-01",
+        "phone": "+1-555-0105"
+      }
+    }
+  ]
+}
