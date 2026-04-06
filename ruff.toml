@@ -1,0 +1,27 @@
+# Ruff — fast Python linter + formatter
+# Replaces flake8, isort, black in one tool
+
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+    "UP",   # pyupgrade (modern Python syntax)
+    "B",    # flake8-bugbear (common bugs)
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # function call in default arg — needed for FastAPI Depends()
+]
+
+[lint.isort]
+known-first-party = ["common"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]  # assert allowed in tests
