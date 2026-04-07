@@ -1,20 +1,33 @@
 # LLM-Powered AI QA Suite
 
-A production-ready suite of **6 AI-powered QA tools** built on **Claude Opus 4.6** and the **Claude Agent SDK**. Each tool solves a real problem in automated testing pipelines — from generating tests and healing broken selectors, to debugging failures and generating GDPR-safe mock data.
+A production-grade suite of **6 AI-powered QA tools** built on **Claude Opus**
+and the **Claude Agent SDK**. Each tool solves a real problem in automated
+testing pipelines — from generating tests and healing broken selectors, to
+debugging failures and generating GDPR-safe mock data.
+
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Claude Agent SDK](https://img.shields.io/badge/Claude%20Agent%20SDK-multi--agent-D97757)](https://docs.anthropic.com/)
+[![Pydantic](https://img.shields.io/badge/Pydantic-structured%20outputs-E92063)](https://docs.pydantic.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-dashboard-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+
+**Demonstrates**: multi-agent orchestration · structured outputs · prompt
+injection separation · cost-aware caching · production-grade Python (Pydantic
++ SQLAlchemy + FastAPI).
 
 ---
 
 ## Tools
 
 ### `ai-test-generator`
-Generates Playwright, Cypress, or Selenium test code from plain-English requirements.
+Generates Playwright, Cypress, or Selenium test code from plain-English
+requirements.
 
 ```bash
 cd ai-test-generator
 python3 cli.py generate "User can log in with valid credentials" --framework playwright
 ```
 
-- Claude Opus 4.6 with adaptive thinking
+- Claude Opus with adaptive thinking
 - Result caching by requirement hash (no duplicate API calls)
 - Structural code validation before persisting to DB
 - Supports `--output-file` to write directly to `.spec.ts`
@@ -22,7 +35,8 @@ python3 cli.py generate "User can log in with valid credentials" --framework pla
 ---
 
 ### `ai-test-analyzer`
-Detects flaky tests from test logs and provides AI root-cause analysis with fix suggestions.
+Detects flaky tests from test logs and provides AI root-cause analysis with
+fix suggestions.
 
 ```bash
 cd ai-test-analyzer
@@ -30,13 +44,15 @@ cat test_results.json | python3 cli.py analyze -
 ```
 
 - Batches up to 10 tests per Claude call (cost-efficient)
-- **Structured outputs** via Pydantic schema — guaranteed valid response, no fragile JSON parsing
+- **Structured outputs** via Pydantic schema — guaranteed valid response, no
+  fragile JSON parsing
 - Persists runs + per-test AI suggestions to SQLite DB
 
 ---
 
 ### `ai-test-healer`
-Repairs broken CSS selectors using Claude. Ideal for self-healing Playwright/Cypress test suites.
+Repairs broken CSS selectors using Claude. Ideal for self-healing Playwright /
+Cypress test suites.
 
 ```bash
 cd ai-test-healer
@@ -45,7 +61,8 @@ python3 cli.py heal "Login button" "button.login" "<button class='btn-submit'>Lo
 
 - Cache: same broken selector + same HTML → zero API calls
 - CSS syntax validation via `cssselect`
-- Prefers stable attributes (`data-testid`, `aria-*`, `id`) over positional selectors
+- Prefers stable attributes (`data-testid`, `aria-*`, `id`) over positional
+  selectors
 
 ---
 
@@ -60,6 +77,7 @@ python3 app.py
 ```
 
 **Endpoints:**
+
 | Route | Description |
 |---|---|
 | `GET /api/metrics/summary` | Aggregate counts + avg flaky rate |
@@ -70,10 +88,9 @@ python3 app.py
 
 ---
 
----
-
 ### `ai-debug-accelerator`
-Skráti MTTR (Mean Time To Resolution) — analyzuje Playwright zlyhania a generuje `ai_debug_report.md`.
+Reduces MTTR (Mean Time To Resolution) — analyses Playwright failures and
+generates `ai_debug_report.md`.
 
 ```bash
 cd ai-debug-accelerator
@@ -81,14 +98,17 @@ python3 cli.py analyze playwright-report.json
 python3 cli.py analyze playwright-report.json --output-dir ./reports --open
 ```
 
-- **Multi-agent pipeline** (mimo Claude Code): SDET subagent diagnostikuje, Code Review subagent validuje fixy
-- **Fallback**: priamy Anthropic API s SDET + Code Review promptami keď beží vnorene
-- Report obsahuje: summary tabuľku, root cause analýzu, konkrétne code fixy, OWASP security tipy
+- **Multi-agent pipeline** (outside Claude Code): SDET subagent diagnoses, Code
+  Review subagent validates fixes
+- **Fallback**: direct Anthropic API with SDET + Code Review prompts when
+  running nested
+- Report contains: summary table, root-cause analysis, concrete code fixes,
+  OWASP security tips
 
 ---
 
 ### `ai-mock-architect`
-Generuje syntetické, GDPR-safe testovacie dáta z OpenAPI/Swagger schémy.
+Generates synthetic, GDPR-safe test data from OpenAPI / Swagger schemas.
 
 ```bash
 cd ai-mock-architect
@@ -96,10 +116,13 @@ python3 cli.py generate swagger.json
 python3 cli.py generate https://petstore.swagger.io/v2/swagger.json --output-dir ./mocks
 ```
 
-- **Multi-agent pipeline**: Architect parsuje schému, SDET generuje dáta, Security audituje PII
-- Generuje **5 sád dát** na každý POST/PUT endpoint (happy path, boundary, edge cases, unicode)
-- Output kompatibilný s **Prism** a **Mockoon**
-- `@example.com` emaily, `+1-555-01xx` telefóny, fiktívne adresy — 100% GDPR-safe
+- **Multi-agent pipeline**: Architect parses schema, SDET generates data,
+  Security audits PII
+- Generates **5 data sets** per POST / PUT endpoint (happy path, boundary,
+  edge cases, unicode)
+- Output compatible with **Prism** and **Mockoon**
+- `@example.com` emails, `+1-555-01xx` phone numbers, fictitious addresses —
+  100% GDPR-safe
 
 ---
 
@@ -112,7 +135,7 @@ ai-qa-projects/
 │   ├── config.py                # Pydantic Settings (reads from .env)
 │   ├── database.py              # SQLAlchemy engine + session context managers
 │   ├── models.py                # ORM models (GeneratedTest, FlakyTestRun, HealedSelector)
-│   ├── schemas.py               # Pydantic request/response schemas
+│   ├── schemas.py               # Pydantic request / response schemas
 │   ├── sanitizer.py             # Input validation and SHA-256 hashing
 │   └── exceptions.py            # Typed exception hierarchy
 ├── ai-test-generator/           # Tool 1 — Anthropic API
@@ -124,7 +147,8 @@ ai-qa-projects/
 └── pyproject.toml
 ```
 
-**Shared SQLite DB** at `~/ai-qa-projects/qa_suite.db` — all tools read/write the same database.
+**Shared SQLite DB** at `~/ai-qa-projects/qa_suite.db` — all tools read / write
+the same database.
 
 ---
 
@@ -132,7 +156,8 @@ ai-qa-projects/
 
 ```bash
 # 1. Install dependencies
-pip3 install anthropic python-dotenv pydantic-settings sqlalchemy tenacity cssselect fastapi uvicorn click
+pip3 install anthropic python-dotenv pydantic-settings sqlalchemy tenacity \
+             cssselect fastapi uvicorn click
 
 # 2. Create .env in each tool folder (or project root)
 echo "ANTHROPIC_API_KEY=sk-ant-api03-..." > ai-test-generator/.env
@@ -149,11 +174,11 @@ python3 cli.py generate "..." --framework playwright
 
 | Decision | Why |
 |---|---|
-| **Claude Opus 4.6** | Best reasoning for code generation and root-cause analysis |
+| **Claude Opus** | Best reasoning for code generation and root-cause analysis |
 | **Adaptive thinking** | Model decides when to think deeply — better quality, no wasted tokens |
-| **Streaming for large outputs** | Prevents HTTP timeouts on 4096-token responses |
+| **Streaming for large outputs** | Prevents HTTP timeouts on 4 096-token responses |
 | **Structured outputs (Pydantic)** | Guaranteed valid schema from Claude — no JSON parsing edge cases |
-| **Prompt injection separation** | User content always in the `user` turn, never in `system` prompt |
+| **Prompt-injection separation** | User content always in the `user` turn, never in `system` prompt |
 | **Result caching** | SHA-256 hash of input → skip Claude if result already in DB |
 | **Read-only dashboard sessions** | `PRAGMA query_only = ON` per session — dashboard cannot corrupt data |
 
@@ -162,7 +187,7 @@ python3 cli.py generate "..." --framework playwright
 ## Security
 
 - API key validated against `sk-ant-api##-<90+ chars>` pattern on startup
-- HTML snippets and selectors sanitized before injection into prompts
+- HTML snippets and selectors sanitised before injection into prompts
 - `.env` files listed in `.gitignore` — secrets never committed
 - Dashboard uses read-only DB sessions
 
@@ -170,4 +195,5 @@ python3 cli.py generate "..." --framework playwright
 
 ## Model
 
-Built with [Claude Opus 4.6](https://anthropic.com) via the [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python).
+Built with [Claude Opus](https://anthropic.com) via the
+[Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python).
