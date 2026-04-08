@@ -6,6 +6,7 @@ Responsibilities:
 - Persist GeneratedTest rows via SQLAlchemy ORM (no raw SQL)
 - Write generated code to disk when an output path is supplied
 """
+
 from __future__ import annotations
 
 import logging
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Cache / read operations
 # ---------------------------------------------------------------------------
+
 
 def find_cached_test(
     session: Session,
@@ -59,6 +61,7 @@ def find_cached_test(
 # ---------------------------------------------------------------------------
 # Write operations
 # ---------------------------------------------------------------------------
+
 
 def save_generated_test(
     session: Session,

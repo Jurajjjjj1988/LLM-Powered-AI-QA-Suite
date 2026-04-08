@@ -11,17 +11,11 @@ Orchestration flow:
   7. Optionally write to file
   8. Return GenerateTestsResponse
 """
+
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-
-from common.claude_client import ClaudeClient
-from common.config import Settings, get_settings
-from common.database import get_session, init_db
-from common.exceptions import ClaudeAPIError
-from common.sanitizer import hash_text, sanitize_requirement
-from common.schemas import GenerateTestsRequest, GenerateTestsResponse
 
 from prompts import SYSTEM_PROMPT, build_user_message
 from repository import (
@@ -30,6 +24,13 @@ from repository import (
     write_code_to_file,
 )
 from validator import validate_generated_code
+
+from common.claude_client import ClaudeClient
+from common.config import Settings, get_settings
+from common.database import get_session, init_db
+from common.exceptions import ClaudeAPIError
+from common.sanitizer import hash_text, sanitize_requirement
+from common.schemas import GenerateTestsRequest, GenerateTestsResponse
 
 logger = logging.getLogger(__name__)
 
@@ -164,6 +165,7 @@ class TestGenerator:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _strip_code_fences(text: str) -> str:
     """

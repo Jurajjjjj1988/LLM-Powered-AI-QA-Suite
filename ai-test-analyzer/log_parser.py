@@ -10,13 +10,15 @@ All entries are normalised to TestLogEntry (from common.schemas), which already
 applies the status normalisation mapping (PASSED→PASS, FAILED→FAIL, etc.) via
 its field_validator.
 """
+
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 from xml.etree import ElementTree
 
 from common.schemas import TestLogEntry
@@ -38,6 +40,7 @@ _PLAIN_LINE_RE = re.compile(
 # ---------------------------------------------------------------------------
 # Public entry-point
 # ---------------------------------------------------------------------------
+
 
 def parse_log_file(path: str | Path) -> list[TestLogEntry]:
     """
@@ -103,6 +106,7 @@ def parse_log_entries(raw_entries: list[dict]) -> list[TestLogEntry]:
 # Format-specific parsers
 # ---------------------------------------------------------------------------
 
+
 def _parse_json_log(raw: str, source: str) -> list[TestLogEntry]:
     data = json.loads(raw)
     if isinstance(data, dict):
@@ -112,9 +116,7 @@ def _parse_json_log(raw: str, source: str) -> list[TestLogEntry]:
                 data = data[key]
                 break
         else:
-            raise ValueError(
-                f"JSON in {source} is an object but no known list key found"
-            )
+            raise ValueError(f"JSON in {source} is an object but no known list key found")
     if not isinstance(data, list):
         raise ValueError(f"Expected a JSON array in {source}")
 
@@ -130,9 +132,7 @@ def _parse_junit_xml(raw: str, source: str) -> list[TestLogEntry]:
 
     # Normalise root: collect all <testcase> elements regardless of nesting
     testcases = list(root.iter("testcase"))
-    logger.debug(
-        "Parsing JUnit XML", extra={"source": source, "testcases": len(testcases)}
-    )
+    logger.debug("Parsing JUnit XML", extra={"source": source, "testcases": len(testcases)})
 
     entries: list[TestLogEntry] = []
     for tc in testcases:
@@ -169,9 +169,7 @@ def _parse_junit_xml(raw: str, source: str) -> list[TestLogEntry]:
                 )
             )
         except Exception as exc:
-            logger.warning(
-                "Skipping JUnit testcase", extra={"name": full_name, "error": str(exc)}
-            )
+            logger.warning("Skipping JUnit testcase", extra={"name": full_name, "error": str(exc)})
 
     return entries
 
@@ -187,22 +185,22 @@ def _parse_plain_text(raw: str) -> Iterable[TestLogEntry]:
             duration_str = m.group("duration") or "0"
             # Convert ms to seconds if the unit hint is present
             duration = _safe_float(duration_str)
-            if "ms" in line[m.start():m.end()].lower():
+            if "ms" in line[m.start() : m.end()].lower():
                 duration = duration / 1000.0
 
-            try:
+            # Skip lines we cannot fully parse
+            with contextlib.suppress(Exception):
                 yield TestLogEntry(
                     test=m.group("name").strip(),
                     status=m.group("status").strip(),
                     duration=duration,
                 )
-            except Exception:
-                pass  # Skip lines we cannot fully parse
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _safe_float(value: str, default: float = 0.0) -> float:
     try:

@@ -16,6 +16,7 @@ Design decisions:
 - All DB errors surface as HTTP 503 rather than 500 to signal "service
   temporarily unavailable due to data store issue" (correct HTTP semantics).
 """
+
 from __future__ import annotations
 
 import logging
@@ -25,13 +26,6 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-
-from common.config import get_settings
-from common.database import get_readonly_session, init_db
-from common.exceptions import DatabaseError
-from common.logging_config import configure_logging
-from common.schemas import DashboardSummary
-
 from repository import (
     get_flaky_runs,
     get_flaky_trend,
@@ -39,6 +33,12 @@ from repository import (
     get_healed_selectors,
     get_summary,
 )
+
+from common.config import get_settings
+from common.database import get_readonly_session, init_db
+from common.exceptions import DatabaseError
+from common.logging_config import configure_logging
+from common.schemas import DashboardSummary
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,7 @@ async def serve_index() -> FileResponse:
 # ---------------------------------------------------------------------------
 # API routes
 # ---------------------------------------------------------------------------
+
 
 @app.get("/api/metrics/summary", response_model=DashboardSummary, tags=["metrics"])
 async def metrics_summary() -> DashboardSummary:

@@ -4,6 +4,7 @@ Repository layer for ai-test-analyzer.
 Persists FlakyTestRun (one per analysis session) and FlakyTestResult (one per
 flaky test within that run) via SQLAlchemy ORM — no raw SQL strings.
 """
+
 from __future__ import annotations
 
 import logging

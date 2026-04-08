@@ -8,6 +8,7 @@ Usage examples:
   # pipe raw JSON entries directly
   echo '[{"test":"login","status":"FAIL","duration":2.1}]' | python cli.py analyze -
 """
+
 from __future__ import annotations
 
 import json
@@ -15,14 +16,13 @@ import logging
 import sys
 
 import click
+from analyze_flaky import FlakyAnalyzer
+from log_parser import parse_log_entries, parse_log_file
 
 from common.config import get_settings
 from common.exceptions import ClaudeAPIError
 from common.logging_config import configure_logging
-from common.schemas import FlakyAnalysisRequest, TestLogEntry
-
-from analyze_flaky import FlakyAnalyzer
-from log_parser import parse_log_file, parse_log_entries
+from common.schemas import FlakyAnalysisRequest
 
 logger = logging.getLogger(__name__)
 

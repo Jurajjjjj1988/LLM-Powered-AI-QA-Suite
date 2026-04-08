@@ -13,3 +13,12 @@ generated/
 .ruff_cache/
 htmlcov/
 .coverage
+
+# Claude Code local-only (per house rule: never push agents/skills/local overrides)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/skills/
+.claude/agents/
+
+# Generated debug reports (artifact, not source)
+**/ai_debug_report.md

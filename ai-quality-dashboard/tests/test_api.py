@@ -18,6 +18,7 @@ Uses:
 
 No real API keys or external services are used.
 """
+
 from __future__ import annotations
 
 import sys
@@ -43,10 +44,10 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
 # Use a module-level :memory: engine, patch the settings, and reset the
 # module-level engine singleton before each test class/fixture.
 
-import common.database as _db_module
-from common.models import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+from common.models import Base
 
 _MEM_URL = "sqlite:///:memory:"
 
@@ -78,6 +79,7 @@ def mem_session(mem_engine):
 @pytest.fixture()
 def mem_settings():
     from common.config import Settings
+
     settings = Settings.model_construct(
         anthropic_api_key="sk-ant-api03-" + "x" * 90,
         claude_model="claude-test-model",
@@ -107,6 +109,7 @@ def client(mem_engine, mem_settings):
     directly, bypassing any file-path-based engine creation.
     """
     from contextlib import contextmanager
+
     from sqlalchemy.orm import Session
 
     Session = sessionmaker(bind=mem_engine, autoflush=False, autocommit=False)
@@ -120,15 +123,20 @@ def client(mem_engine, mem_settings):
             session.close()
 
     # Patch both settings and get_readonly_session in the app module
-    with patch("app.settings", mem_settings), \
-         patch("app.get_readonly_session", _mem_readonly_session), \
-         patch("app.init_db", return_value=None):
+    with (
+        patch("app.settings", mem_settings),
+        patch("app.get_readonly_session", _mem_readonly_session),
+        patch("app.init_db", return_value=None),
+    ):
         # Import app AFTER patching so module-level code runs with mocks
         import importlib
+
         import app as app_module
+
         importlib.reload(app_module)
 
         from fastapi.testclient import TestClient
+
         test_client = TestClient(app_module.app, raise_server_exceptions=False)
         yield test_client, mem_engine
 
@@ -199,6 +207,7 @@ def _seed_healed_selector(session, old="#broken", new="button.submit", valid=Tru
 # GET / (index.html)
 # ---------------------------------------------------------------------------
 
+
 class TestServeIndex:
     def test_should_return_200_with_html_content_type(self, client):
         test_client, _ = client
@@ -210,6 +219,7 @@ class TestServeIndex:
 # ---------------------------------------------------------------------------
 # GET /api/metrics/summary
 # ---------------------------------------------------------------------------
+
 
 class TestMetricsSummary:
     def test_should_return_all_5_fields_matching_db_state(self, client, mem_session):
@@ -253,6 +263,7 @@ class TestMetricsSummary:
 # GET /api/flaky-tests/trend
 # ---------------------------------------------------------------------------
 
+
 class TestFlakyTrend:
     def test_should_return_empty_array_when_db_is_empty(self, client):
         test_client, _ = client
@@ -287,6 +298,7 @@ class TestFlakyTrend:
 # Pagination of generated-tests
 # ---------------------------------------------------------------------------
 
+
 class TestPagination:
     def _seed_n_tests(self, session, n: int):
         for i in range(n):
@@ -319,9 +331,7 @@ class TestPagination:
         second_ids = {r["id"] for r in second_page}
         assert first_ids.isdisjoint(second_ids), "Pages must not overlap"
 
-    def test_should_return_empty_array_when_offset_exceeds_total(
-        self, client, mem_engine
-    ):
+    def test_should_return_empty_array_when_offset_exceeds_total(self, client, mem_engine):
         test_client, _ = client
         Session = sessionmaker(bind=mem_engine)
         session = Session()
@@ -337,6 +347,7 @@ class TestPagination:
 # DB unreachable → HTTP 503
 # ---------------------------------------------------------------------------
 
+
 class TestDbUnreachable:
     """
     Simulate a DatabaseError in every repository function to confirm all
@@ -345,33 +356,40 @@ class TestDbUnreachable:
 
     @pytest.fixture()
     def unreachable_client(self, mem_settings):
-        from common.exceptions import DatabaseError
         from contextlib import contextmanager
+
+        from common.exceptions import DatabaseError
 
         @contextmanager
         def _raise_session(db_path):
             raise DatabaseError("connection refused")
             yield  # pragma: no cover
 
-        with patch("app.settings", mem_settings), \
-             patch("app.get_readonly_session", _raise_session), \
-             patch("app.init_db", return_value=None):
+        with (
+            patch("app.settings", mem_settings),
+            patch("app.get_readonly_session", _raise_session),
+            patch("app.init_db", return_value=None),
+        ):
             import importlib
+
             import app as app_module
+
             importlib.reload(app_module)
 
             from fastapi.testclient import TestClient
+
             yield TestClient(app_module.app, raise_server_exceptions=False)
 
-    @pytest.mark.parametrize("endpoint", [
-        "/api/metrics/summary",
-        "/api/generated-tests",
-        "/api/flaky-tests",
-        "/api/flaky-tests/trend",
-        "/api/healed-selectors",
-    ])
-    def test_should_return_503_when_db_is_unreachable(
-        self, unreachable_client, endpoint
-    ):
+    @pytest.mark.parametrize(
+        "endpoint",
+        [
+            "/api/metrics/summary",
+            "/api/generated-tests",
+            "/api/flaky-tests",
+            "/api/flaky-tests/trend",
+            "/api/healed-selectors",
+        ],
+    )
+    def test_should_return_503_when_db_is_unreachable(self, unreachable_client, endpoint):
         response = unreachable_client.get(endpoint)
         assert response.status_code == 503

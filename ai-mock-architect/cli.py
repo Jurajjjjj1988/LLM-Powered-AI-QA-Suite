@@ -7,6 +7,7 @@ Usage:
   python3 cli.py generate swagger.json --output-dir ./my-mocks
   python3 cli.py generate swagger.json --open
 """
+
 from __future__ import annotations
 
 import logging

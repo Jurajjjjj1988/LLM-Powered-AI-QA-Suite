@@ -9,6 +9,7 @@ Why read-only queries here and not in app.py?
   repository.py handles all database access.
 - Easier to test in isolation without standing up FastAPI.
 """
+
 from __future__ import annotations
 
 import logging
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 # Summary
 # ---------------------------------------------------------------------------
 
+
 def get_summary(session: Session) -> DashboardSummary:
     """Return aggregate metrics for the dashboard summary cards."""
 
@@ -34,9 +36,7 @@ def get_summary(session: Session) -> DashboardSummary:
 
     flaky_runs_count: int = session.query(func.count(FlakyTestRun.id)).scalar() or 0
 
-    avg_flaky_rate: float = (
-        session.query(func.avg(FlakyTestResult.fail_rate)).scalar() or 0.0
-    )
+    avg_flaky_rate: float = session.query(func.avg(FlakyTestResult.fail_rate)).scalar() or 0.0
 
     healed_count: int = session.query(func.count(HealedSelector.id)).scalar() or 0
 
@@ -60,6 +60,7 @@ def get_summary(session: Session) -> DashboardSummary:
 # ---------------------------------------------------------------------------
 # Generated tests
 # ---------------------------------------------------------------------------
+
 
 def get_generated_tests(
     session: Session,
@@ -90,6 +91,7 @@ def get_generated_tests(
 # ---------------------------------------------------------------------------
 # Flaky tests
 # ---------------------------------------------------------------------------
+
 
 def get_flaky_runs(
     session: Session,
@@ -167,6 +169,7 @@ def get_flaky_trend(session: Session, days: int = 30) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Healed selectors
 # ---------------------------------------------------------------------------
+
 
 def get_healed_selectors(
     session: Session,

@@ -1,0 +1,1 @@
+Review the current diff (or a target path) against `.claude/rules/` using the `code-reviewer` agent, then the `security-auditor` agent. Report SHIP / FIX FIRST with file:line. Run `.venv/bin/ruff check .` + `.venv/bin/pytest -q` first so the review is on green code.

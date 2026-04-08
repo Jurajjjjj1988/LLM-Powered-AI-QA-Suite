@@ -12,12 +12,16 @@ Fallback (ak beží vnútri Claude Code session):
 Spúšťaj z terminálu mimo Claude Code:
   python3 cli.py analyze sample-report.json
 """
+
 from __future__ import annotations
 
-import anyio
 import logging
 import os
 from pathlib import Path
+
+import anyio
+
+from common.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +29,31 @@ logger = logging.getLogger(__name__)
 # Načítanie agent promptov
 # ---------------------------------------------------------------------------
 
-_PROMPTS_DIR = Path("/Users/kapusansky/ai-agents/prompts")
+
+def _load_prompt(filename: str, prompts_dir: Path) -> str:
+    """Load a prompt file from the configured prompts directory.
+
+    Returns empty string if file doesn't exist — subagent will use its
+    description field as fallback. Logs a warning for visibility.
+    """
+    path = prompts_dir / filename
+    if not path.exists():
+        logger.warning(
+            "Prompt file not found; subagent will run with minimal context",
+            extra={"path": str(path), "filename": filename},
+        )
+        return ""
+    return path.read_text(encoding="utf-8")
 
 
-def _load_prompt(filename: str) -> str:
-    path = _PROMPTS_DIR / filename
-    return path.read_text(encoding="utf-8") if path.exists() else ""
+def _get_prompts() -> tuple[str, str]:
+    """Load SDET + Code Review prompts using settings-configured dir."""
+    settings = get_settings()
+    return (
+        _load_prompt("SDET.MD", settings.prompts_dir),
+        _load_prompt("CODE_REVIEW.MD", settings.prompts_dir),
+    )
 
-
-SDET_PROMPT = _load_prompt("SDET.MD")
-CODE_REVIEW_PROMPT = _load_prompt("CODE_REVIEW.MD")
 
 ORCHESTRATOR_PROMPT = """\
 You are the lead QA orchestrator for the AI Debug-Accelerator.
@@ -60,7 +79,9 @@ Be concise and actionable. No fluff.
 
 
 async def _run_agent_pipeline(report_path: str, cwd: str, api_key: str) -> str:
-    from claude_agent_sdk import query, ClaudeAgentOptions, AgentDefinition, ResultMessage
+    from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
+
+    sdet_prompt, code_review_prompt = _get_prompts()
 
     prompt = (
         f"Analyse the Playwright test report at: `{report_path}`\n\n"
@@ -88,7 +109,7 @@ async def _run_agent_pipeline(report_path: str, cwd: str, api_key: str) -> str:
                         "Identifies root causes (timing, selector, assertion, network) "
                         "and provides concrete TypeScript/Playwright fix code."
                     ),
-                    prompt=SDET_PROMPT,
+                    prompt=sdet_prompt,
                     tools=["Read", "Glob"],
                 ),
                 "code-reviewer": AgentDefinition(
@@ -96,7 +117,7 @@ async def _run_agent_pipeline(report_path: str, cwd: str, api_key: str) -> str:
                         "Senior code reviewer who validates proposed fixes for correctness, "
                         "readability, and adherence to Playwright best practices."
                     ),
-                    prompt=CODE_REVIEW_PROMPT,
+                    prompt=code_review_prompt,
                     tools=["Read"],
                 ),
             },
@@ -116,12 +137,14 @@ async def _run_agent_pipeline(report_path: str, cwd: str, api_key: str) -> str:
 def _run_direct_api(report_path: str, api_key: str) -> str:
     import anthropic
 
+    sdet_prompt, code_review_prompt = _get_prompts()
+
     report_content = Path(report_path).read_text(encoding="utf-8")
 
     client = anthropic.Anthropic(api_key=api_key)
 
     system = (
-        SDET_PROMPT + "\n\n" + CODE_REVIEW_PROMPT + "\n\n"
+        sdet_prompt + "\n\n" + code_review_prompt + "\n\n"
         "You are now acting as both SDET analyst and code reviewer combined.\n"
         "Analyse the Playwright test report JSON, identify root causes for each FAILED test, "
         "propose concrete fixes, then write a markdown report.\n"
@@ -144,9 +167,7 @@ def _run_direct_api(report_path: str, api_key: str) -> str:
     ) as stream:
         final = stream.get_final_message()
 
-    return next(
-        (block.text for block in final.content if block.type == "text"), ""
-    )
+    return next((block.text for block in final.content if block.type == "text"), "")
 
 
 # ---------------------------------------------------------------------------
