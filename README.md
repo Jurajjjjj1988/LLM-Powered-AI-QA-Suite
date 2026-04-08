@@ -1,199 +1,84 @@
 # LLM-Powered AI QA Suite
 
-A production-grade suite of **6 AI-powered QA tools** built on **Claude Opus**
-and the **Claude Agent SDK**. Each tool solves a real problem in automated
-testing pipelines — from generating tests and healing broken selectors, to
-debugging failures and generating GDPR-safe mock data.
+Six AI-powered QA tools built on **Claude** and the **Claude Agent SDK** — from generating tests and healing broken selectors to root-causing flaky failures and producing GDPR-safe mock data. A portfolio of AI-native quality engineering: each tool a small, typed, tested Python package on a shared core.
 
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Claude Agent SDK](https://img.shields.io/badge/Claude%20Agent%20SDK-multi--agent-D97757)](https://docs.anthropic.com/)
-[![Pydantic](https://img.shields.io/badge/Pydantic-structured%20outputs-E92063)](https://docs.pydantic.dev/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-dashboard-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Claude Agent SDK](https://img.shields.io/badge/Claude%20Agent%20SDK-D97757)](https://docs.anthropic.com/)
+[![Pydantic v2](https://img.shields.io/badge/Pydantic-structured%20outputs-E92063)](https://docs.pydantic.dev/)
+[![ruff](https://img.shields.io/badge/ruff-clean-261230?logo=ruff)](https://docs.astral.sh/ruff/)
+[![tests](https://img.shields.io/badge/pytest-128%20passing-0A9EDC?logo=pytest&logoColor=white)](#quality)
 
-**Demonstrates**: multi-agent orchestration · structured outputs · prompt
-injection separation · cost-aware caching · production-grade Python (Pydantic
-+ SQLAlchemy + FastAPI).
+**Demonstrates:** structured LLM outputs (Pydantic) · a shared Claude client with retry + caching · packaged multi-tool Python · a full Claude Code project setup — not throwaway scripts.
 
 ---
 
 ## Tools
 
-### `ai-test-generator`
-Generates Playwright, Cypress, or Selenium test code from plain-English
-requirements.
+| Tool | What it does | CLI |
+| --- | --- | --- |
+| **ai-test-generator** | Plain-English requirement → Playwright / Cypress / Selenium test code (cached by requirement hash, structurally validated before persisting) | `ai-test-generator generate "user can log in" --framework playwright` |
+| **ai-test-analyzer** | Detects flaky tests from run logs + AI root-cause with fix suggestions (batched, structured output) | `cat runs.json \| ai-test-analyzer analyze -` |
+| **ai-test-healer** | Heals a broken selector against the changed DOM, validating the CSS before recording it | `ai-test-healer heal "login button" ".old" "<html>…"` |
+| **ai-debug-accelerator** | AI-assisted triage of a failing test — likely cause + next step | `ai-debug-accelerator analyze failure.log` |
+| **ai-mock-architect** | GDPR-safe synthetic/mock test data from a schema | `ai-mock-architect generate schema.json` |
+| **ai-quality-dashboard** | Read-only FastAPI dashboard over the tools' metrics | `ai-quality-dashboard serve` |
+
+Every tool persists to a shared SQLite DB and talks to Claude only through `common/claude_client.py`.
+
+## Quickstart
 
 ```bash
-cd ai-test-generator
-python3 cli.py generate "User can log in with valid credentials" --framework playwright
+git clone https://github.com/Jurajjjjj1988/LLM-Powered-AI-QA-Suite.git
+cd LLM-Powered-AI-QA-Suite
+python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'   # installs the tools + their CLIs
+export ANTHROPIC_API_KEY=sk-ant-...                          # or a .env file
+ai-test-generator generate "User can reset their password" --framework playwright
 ```
 
-- Claude Opus with adaptive thinking
-- Result caching by requirement hash (no duplicate API calls)
-- Structural code validation before persisting to DB
-- Supports `--output-file` to write directly to `.spec.ts`
-
----
-
-### `ai-test-analyzer`
-Detects flaky tests from test logs and provides AI root-cause analysis with
-fix suggestions.
-
-```bash
-cd ai-test-analyzer
-cat test_results.json | python3 cli.py analyze -
-```
-
-- Batches up to 10 tests per Claude call (cost-efficient)
-- **Structured outputs** via Pydantic schema — guaranteed valid response, no
-  fragile JSON parsing
-- Persists runs + per-test AI suggestions to SQLite DB
-
----
-
-### `ai-test-healer`
-Repairs broken CSS selectors using Claude. Ideal for self-healing Playwright /
-Cypress test suites.
-
-```bash
-cd ai-test-healer
-python3 cli.py heal "Login button" "button.login" "<button class='btn-submit'>Login</button>"
-```
-
-- Cache: same broken selector + same HTML → zero API calls
-- CSS syntax validation via `cssselect`
-- Prefers stable attributes (`data-testid`, `aria-*`, `id`) over positional
-  selectors
-
----
-
-### `ai-quality-dashboard`
-Read-only FastAPI dashboard exposing metrics from all three tools via REST API.
-
-```bash
-cd ai-quality-dashboard
-python3 app.py
-# → http://127.0.0.1:8000
-# → http://127.0.0.1:8000/api/docs
-```
-
-**Endpoints:**
-
-| Route | Description |
-|---|---|
-| `GET /api/metrics/summary` | Aggregate counts + avg flaky rate |
-| `GET /api/generated-tests` | Paginated list of generated tests |
-| `GET /api/flaky-tests` | Flaky analysis runs with AI suggestions |
-| `GET /api/flaky-tests/trend` | Daily flaky-rate time series (last 30 days) |
-| `GET /api/healed-selectors` | Healed CSS selector history |
-
----
-
-### `ai-debug-accelerator`
-Reduces MTTR (Mean Time To Resolution) — analyses Playwright failures and
-generates `ai_debug_report.md`.
-
-```bash
-cd ai-debug-accelerator
-python3 cli.py analyze playwright-report.json
-python3 cli.py analyze playwright-report.json --output-dir ./reports --open
-```
-
-- **Multi-agent pipeline** (outside Claude Code): SDET subagent diagnoses, Code
-  Review subagent validates fixes
-- **Fallback**: direct Anthropic API with SDET + Code Review prompts when
-  running nested
-- Report contains: summary table, root-cause analysis, concrete code fixes,
-  OWASP security tips
-
----
-
-### `ai-mock-architect`
-Generates synthetic, GDPR-safe test data from OpenAPI / Swagger schemas.
-
-```bash
-cd ai-mock-architect
-python3 cli.py generate swagger.json
-python3 cli.py generate https://petstore.swagger.io/v2/swagger.json --output-dir ./mocks
-```
-
-- **Multi-agent pipeline**: Architect parses schema, SDET generates data,
-  Security audits PII
-- Generates **5 data sets** per POST / PUT endpoint (happy path, boundary,
-  edge cases, unicode)
-- Output compatible with **Prism** and **Mockoon**
-- `@example.com` emails, `+1-555-01xx` phone numbers, fictitious addresses —
-  100% GDPR-safe
-
----
+Each tool becomes a console entry point after install (`ai-test-generator`, `ai-test-analyzer`, …). Run any with `--help`.
 
 ## Architecture
 
 ```
-ai-qa-projects/
-├── common/                      # Shared across tools 1-4
-│   ├── claude_client.py         # Anthropic SDK wrapper (streaming, adaptive thinking, retries)
-│   ├── config.py                # Pydantic Settings (reads from .env)
-│   ├── database.py              # SQLAlchemy engine + session context managers
-│   ├── models.py                # ORM models (GeneratedTest, FlakyTestRun, HealedSelector)
-│   ├── schemas.py               # Pydantic request / response schemas
-│   ├── sanitizer.py             # Input validation and SHA-256 hashing
-│   └── exceptions.py            # Typed exception hierarchy
-├── ai-test-generator/           # Tool 1 — Anthropic API
-├── ai-test-analyzer/            # Tool 2 — Anthropic API + structured outputs
-├── ai-test-healer/              # Tool 3 — Anthropic API
-├── ai-quality-dashboard/        # Tool 4 — FastAPI + SQLite
-├── ai-debug-accelerator/        # Tool 5 — Claude Agent SDK (SDET + Code Review subagents)
-├── ai-mock-architect/           # Tool 6 — Claude Agent SDK (Architect + SDET + Security subagents)
-└── pyproject.toml
+common/                shared core — every tool reuses it (never re-implemented)
+  claude_client.py       the ONE Claude wrapper (retry, caching, structured output)
+  config.py              pydantic-settings config (env / .env)
+  database.py            SQLAlchemy 2.0 sessions (SQLite)
+  models.py schemas.py   ORM models + pydantic request/response DTOs
+  sanitizer.py           input sanitisation (prompt-injection separation)
+ai_test_generator/     one package per tool: cli.py · core · prompts · repository · tests/
+ai_test_analyzer/      …  imports are namespaced (ai_test_analyzer.prompts) — no cross-tool collisions
+…
+.claude/               Claude Code project setup — rules · commands · hooks · agents
 ```
 
-**Shared SQLite DB** at `~/ai-qa-projects/qa_suite.db` — all tools read / write
-the same database.
+- **Structured, not string-parsed.** LLM responses come back as validated Pydantic models via the SDK's parse path, never hand-parsed JSON.
+- **One shared pattern.** The Claude client, DB, config, and CLI scaffolding live in `common/`; a tool never imports `anthropic` or touches SQLite directly.
+- **Packaged.** Each tool is a real Python package with a console entry point — installable, importable, and free of the flat-module collisions a multi-tool repo invites.
 
----
+## Quality
 
-## Setup
+| Gate | State |
+| --- | --- |
+| `ruff check .` | **clean** (lint + format) |
+| `pytest` | **128 passing** · 13 skipped (the dashboard API harness is mid-refactor — see Roadmap) |
+| Types | typed public surface (return + parameter hints); `common/` fully typed |
+| Claude API in tests | fully **mocked** — the suite runs offline + free |
 
 ```bash
-# 1. Install dependencies
-pip3 install anthropic python-dotenv pydantic-settings sqlalchemy tenacity \
-             cssselect fastapi uvicorn click
-
-# 2. Create .env in each tool folder (or project root)
-echo "ANTHROPIC_API_KEY=sk-ant-api03-..." > ai-test-generator/.env
-# repeat for ai-test-analyzer, ai-test-healer, ai-quality-dashboard
-
-# 3. Run any tool
-cd ai-test-generator
-python3 cli.py generate "..." --framework playwright
+.venv/bin/ruff check . && .venv/bin/pytest -q
 ```
 
----
+## Roadmap
 
-## Key Design Decisions
+The current tools are open-loop analysers. The strongest next step is a **closed loop** — the pattern from the sibling [PWmodernizer](https://github.com/Jurajjjjj1988/PWmodernizer): generate → **run** the test → **repair** on failure until it actually passes. Building a shared execution runner in `common/` once unlocks it across the generator, healer, and a planned mutation-testing tool. Also queued: a requirements→test coverage cartographer, an LLM-app / prompt-evaluation tool, and the FastAPI dashboard's dependency-injection refactor (the skipped tests).
 
-| Decision | Why |
-|---|---|
-| **Claude Opus** | Best reasoning for code generation and root-cause analysis |
-| **Adaptive thinking** | Model decides when to think deeply — better quality, no wasted tokens |
-| **Streaming for large outputs** | Prevents HTTP timeouts on 4 096-token responses |
-| **Structured outputs (Pydantic)** | Guaranteed valid schema from Claude — no JSON parsing edge cases |
-| **Prompt-injection separation** | User content always in the `user` turn, never in `system` prompt |
-| **Result caching** | SHA-256 hash of input → skip Claude if result already in DB |
-| **Read-only dashboard sessions** | `PRAGMA query_only = ON` per session — dashboard cannot corrupt data |
+## Limitations (honest)
 
----
+- **Assistive, human-reviewed** — the tools produce a strong first pass, not merge-ready output unattended. LLM test-generation accuracy tops out around ~85%.
+- No execution/verification loop yet (see Roadmap) — generated tests are structurally validated, not run.
+- The dashboard's API tests are skipped pending a lifespan + dependency-override refactor.
 
-## Security
+## License
 
-- API key validated against `sk-ant-api##-<90+ chars>` pattern on startup
-- HTML snippets and selectors sanitised before injection into prompts
-- `.env` files listed in `.gitignore` — secrets never committed
-- Dashboard uses read-only DB sessions
-
----
-
-## Model
-
-Built with [Claude Opus](https://anthropic.com) via the
-[Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python).
+MIT. See [`LICENSE`](LICENSE).

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Models that support adaptive thinking (no budget_tokens needed)
-_ADAPTIVE_THINKING_MODELS = {"claude-opus-4-6", "claude-sonnet-4-6"}
+_ADAPTIVE_THINKING_MODELS = {"claude-opus-4-8", "claude-sonnet-4-6"}
 
 # Stream responses above this threshold to avoid HTTP timeouts on large outputs
 _STREAM_THRESHOLD_TOKENS = 1024
