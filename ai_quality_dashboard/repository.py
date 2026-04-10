@@ -13,9 +13,9 @@ Why read-only queries here and not in app.py?
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func
+from sqlalchemy import Float, cast, func
 from sqlalchemy.orm import Session
 
 from common.models import FlakyTestResult, FlakyTestRun, GeneratedTest, HealedSelector
@@ -138,14 +138,14 @@ def get_flaky_trend(session: Session, days: int = 30) -> list[dict]:
     Return daily flaky-rate data for the last *days* days.
     Each point: {date: "YYYY-MM-DD", avg_flaky_rate: float, run_count: int}
     """
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(UTC) - timedelta(days=days)
 
     rows = (
         session.query(
             func.date(FlakyTestRun.analyzed_at).label("day"),
             func.avg(
-                func.cast(FlakyTestRun.flaky_count, float)
-                / func.cast(func.nullif(FlakyTestRun.total_tests, 0), float)
+                cast(FlakyTestRun.flaky_count, Float)
+                / cast(func.nullif(FlakyTestRun.total_tests, 0), Float)
                 * 100
             ).label("avg_flaky_rate"),
             func.count(FlakyTestRun.id).label("run_count"),

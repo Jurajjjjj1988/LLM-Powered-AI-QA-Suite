@@ -1,4 +1,3 @@
-# ruff: noqa: F811, E402  (test harness pending the FastAPI DI refactor; see module skip reason)
 """
 Test strategy for ai-quality-dashboard / app.py
 ================================================
@@ -22,11 +21,11 @@ No real API keys or external services are used.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
+from fastapi.testclient import TestClient
 
 # ---------------------------------------------------------------------------
 # In-memory DB bootstrap
@@ -34,25 +33,25 @@ import pytest
 # We need to set up the DB BEFORE importing app (which runs init_db on import).
 # Use a module-level :memory: engine, patch the settings, and reset the
 # module-level engine singleton before each test class/fixture.
-import pytest as _pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from common.models import Base
-
-# TODO(batch-3): the dashboard app has module-level side effects (get_settings()/
-# init_db at import) and routes read a module-global `settings`, so the reload-based
-# test harness cannot inject an in-memory DB cleanly. Proper fix = FastAPI lifespan +
-# Depends(get_session) + app.dependency_overrides (see .claude audit). Skipped until then.
-pytestmark = _pytest.mark.skip(
-    reason="dashboard needs FastAPI dependency-injection refactor (batch-3 follow-up)"
+from common.models import (
+    Base,
+    FlakyTestResult,
+    FlakyTestRun,
+    GeneratedTest,
+    HealedSelector,
 )
 
 _MEM_URL = "sqlite:///:memory:"
 
 
 def _fresh_mem_engine():
-    engine = create_engine(_MEM_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(
+        _MEM_URL, connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
     Base.metadata.create_all(engine)
     return engine
 
@@ -100,51 +99,31 @@ def mem_settings():
 
 
 @pytest.fixture()
-def client(mem_engine, mem_settings):
-    """
-    Build a FastAPI TestClient with the in-memory DB injected.
+def client(mem_engine):
+    """FastAPI TestClient with an in-memory DB injected via dependency_overrides."""
+    from ai_quality_dashboard.app import app, get_db_session
 
-    Strategy: patch `get_readonly_session` in app.py to use our mem_engine
-    directly, bypassing any file-path-based engine creation.
-    """
-    from contextlib import contextmanager
+    TestSession = sessionmaker(
+        bind=mem_engine, autoflush=False, autocommit=False, expire_on_commit=False
+    )
 
-    from sqlalchemy.orm import Session
-
-    Session = sessionmaker(bind=mem_engine, autoflush=False, autocommit=False)
-
-    @contextmanager
-    def _mem_readonly_session(db_path):
-        session = Session()
+    def _override_session():
+        session = TestSession()
         try:
             yield session
         finally:
             session.close()
 
-    # Patch both settings and get_readonly_session in the app module
-    with (
-        patch("ai_quality_dashboard.app.settings", mem_settings),
-        patch("ai_quality_dashboard.app.get_readonly_session", _mem_readonly_session),
-        patch("ai_quality_dashboard.app.init_db", return_value=None),
-    ):
-        # Import app AFTER patching so module-level code runs with mocks
-        import importlib
-
-        import ai_quality_dashboard.app as app_module
-
-        importlib.reload(app_module)
-
-        from fastapi.testclient import TestClient
-
-        test_client = TestClient(app_module.app, raise_server_exceptions=False)
-        yield test_client, mem_engine
+    app.dependency_overrides[get_db_session] = _override_session
+    try:
+        yield TestClient(app, raise_server_exceptions=False), mem_engine
+    finally:
+        app.dependency_overrides.clear()
 
 
 # ---------------------------------------------------------------------------
 # Helpers for seeding data
 # ---------------------------------------------------------------------------
-
-from common.models import FlakyTestResult, FlakyTestRun, GeneratedTest, HealedSelector
 
 
 def _seed_generated_test(session, framework="playwright", tokens=100, valid=True):
@@ -164,7 +143,7 @@ def _seed_generated_test(session, framework="playwright", tokens=100, valid=True
 
 
 def _seed_flaky_run(session, total=10, flaky=3, days_ago=0, source="ci.log"):
-    analyzed_at = datetime.utcnow() - timedelta(days=days_ago)
+    analyzed_at = datetime.now(UTC) - timedelta(days=days_ago)
     run = FlakyTestRun(
         source_file=source,
         total_tests=total,
@@ -354,7 +333,7 @@ class TestDbUnreachable:
     """
 
     @pytest.fixture()
-    def unreachable_client(self, mem_settings):
+    def unreachable_client(self, mem_settings, mocker):
         from contextlib import contextmanager
 
         from common.exceptions import DatabaseError
@@ -364,20 +343,12 @@ class TestDbUnreachable:
             raise DatabaseError("connection refused")
             yield  # pragma: no cover
 
-        with (
-            patch("ai_quality_dashboard.app.settings", mem_settings),
-            patch("ai_quality_dashboard.app.get_readonly_session", _raise_session),
-            patch("ai_quality_dashboard.app.init_db", return_value=None),
-        ):
-            import importlib
+        mocker.patch("ai_quality_dashboard.app.get_settings", return_value=mem_settings)
+        mocker.patch("ai_quality_dashboard.app.get_readonly_session", _raise_session)
 
-            import ai_quality_dashboard.app as app_module
+        from ai_quality_dashboard.app import app
 
-            importlib.reload(app_module)
-
-            from fastapi.testclient import TestClient
-
-            yield TestClient(app_module.app, raise_server_exceptions=False)
+        yield TestClient(app, raise_server_exceptions=False)
 
     @pytest.mark.parametrize(
         "endpoint",
