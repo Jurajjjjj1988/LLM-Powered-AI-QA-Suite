@@ -132,7 +132,7 @@ class TestStatusNormalisation:
             ("FAIL", "FAIL"),
         ],
     )
-    def test_should_normalize_status_correctly(self, raw, expected):
+    def test_should_normalize_status_correctly(self, raw, expected) -> None:
         entry = TestLogEntry(test="t", status=raw)
         assert entry.status == expected
 
@@ -143,7 +143,7 @@ class TestStatusNormalisation:
 
 
 class TestSkipExclusion:
-    def test_should_exclude_skip_from_total_runs_denominator(self):
+    def test_should_exclude_skip_from_total_runs_denominator(self) -> None:
         # Arrange: 2 PASS + 2 FAIL + 6 SKIP = 10 entries, but denominator = 4
         entries = (
             [_entry("flaky", "PASS")] * 2
@@ -156,7 +156,7 @@ class TestSkipExclusion:
         assert stats["flaky"]["total_runs"] == 4
         assert stats["flaky"]["fail_rate"] == pytest.approx(50.0)
 
-    def test_should_have_zero_fail_rate_when_all_entries_are_skip(self):
+    def test_should_have_zero_fail_rate_when_all_entries_are_skip(self) -> None:
         entries = [_entry("t", "SKIP")] * 5
         stats = _aggregate_stats(entries)
         assert stats["t"]["total_runs"] == 0
@@ -169,7 +169,9 @@ class TestSkipExclusion:
 
 
 class TestBatchBoundary:
-    def test_should_make_one_claude_call_for_10_flaky_tests(self, analyzer, mem_settings, mocker):
+    def test_should_make_one_claude_call_for_10_flaky_tests(
+        self, analyzer, mem_settings, mocker
+    ) -> None:
         # Arrange: 10 distinct tests all with 100% fail rate (exceeds threshold)
         logs = _make_logs_for_n_tests(10)
         response_json = _make_ai_response([f"test_{i:03d}" for i in range(10)])
@@ -181,7 +183,7 @@ class TestBatchBoundary:
         # Assert: exactly 1 call
         assert analyzer._client.complete_structured.call_count == 1
 
-    def test_should_make_two_claude_calls_for_11_flaky_tests(self, analyzer, mem_settings):
+    def test_should_make_two_claude_calls_for_11_flaky_tests(self, analyzer, mem_settings) -> None:
         # Arrange: 11 distinct tests, all flaky
         logs = _make_logs_for_n_tests(11)
         response_json_10 = _make_ai_response([f"test_{i:03d}" for i in range(10)])
@@ -199,7 +201,7 @@ class TestBatchBoundary:
 
 
 class TestPersistence:
-    def test_should_persist_flaky_run_and_results_together(self, analyzer, mem_settings):
+    def test_should_persist_flaky_run_and_results_together(self, analyzer, mem_settings) -> None:
         from common.database import get_session
         from common.models import FlakyTestResult, FlakyTestRun
 
@@ -223,7 +225,7 @@ class TestPersistence:
             assert len(results) == 1
             assert results[0].test_name == "flaky_test"
 
-    def test_should_leave_no_orphan_rows_on_db_error(self, analyzer, mem_settings, mocker):
+    def test_should_leave_no_orphan_rows_on_db_error(self, analyzer, mem_settings, mocker) -> None:
         from common.database import get_session
         from common.models import FlakyTestRun
 

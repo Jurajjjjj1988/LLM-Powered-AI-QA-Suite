@@ -92,7 +92,9 @@ def generator(mem_settings, mock_claude):
 # ---------------------------------------------------------------------------
 
 
-def _playwright_request(requirement="Log in to the application with valid credentials", **kw):
+def _playwright_request(
+    requirement: str = "Log in to the application with valid credentials", **kw
+):
     from common.schemas import GenerateTestsRequest
 
     return GenerateTestsRequest(requirement=requirement, framework="playwright", **kw)
@@ -111,7 +113,7 @@ class TestStripCodeFences:
 
         return _strip_code_fences(text)
 
-    def test_should_remove_typescript_fence_when_present(self):
+    def test_should_remove_typescript_fence_when_present(self) -> None:
         # Arrange
         raw = "```typescript\nimport { test } from '@playwright/test';\n```"
         # Act
@@ -120,7 +122,7 @@ class TestStripCodeFences:
         assert "```" not in result
         assert "import { test }" in result
 
-    def test_should_remove_bare_backtick_fence_when_present(self):
+    def test_should_remove_bare_backtick_fence_when_present(self) -> None:
         # Arrange
         raw = "```\nsome code here\n```"
         # Act
@@ -129,7 +131,7 @@ class TestStripCodeFences:
         assert "```" not in result
         assert "some code here" in result
 
-    def test_should_leave_code_unchanged_when_no_fences(self):
+    def test_should_leave_code_unchanged_when_no_fences(self) -> None:
         # Arrange
         raw = "import { test } from '@playwright/test';"
         # Act
@@ -137,7 +139,7 @@ class TestStripCodeFences:
         # Assert
         assert result == raw
 
-    def test_should_remove_python_fence_when_present(self):
+    def test_should_remove_python_fence_when_present(self) -> None:
         # Arrange
         raw = "```python\nimport pytest\n```"
         # Act
@@ -146,7 +148,7 @@ class TestStripCodeFences:
         assert "```python" not in result
         assert "import pytest" in result
 
-    def test_should_handle_only_opening_fence_without_closing(self):
+    def test_should_handle_only_opening_fence_without_closing(self) -> None:
         # Arrange - model forgot to close the fence
         raw = "```typescript\nimport { test } from '@playwright/test';"
         # Act
@@ -155,14 +157,16 @@ class TestStripCodeFences:
         assert "```typescript" not in result
         assert "import { test }" in result
 
-    def test_should_return_empty_string_when_input_is_empty(self):
+    def test_should_return_empty_string_when_input_is_empty(self) -> None:
         assert self._strip("") == ""
 
 
 class TestCacheHit:
     """Verify that a second identical request returns from_cache=True."""
 
-    def test_should_return_from_cache_true_when_same_requirement_called_twice(self, generator):
+    def test_should_return_from_cache_true_when_same_requirement_called_twice(
+        self, generator
+    ) -> None:
         # Arrange
         req = _playwright_request(use_cache=True)
 
@@ -175,7 +179,7 @@ class TestCacheHit:
         assert second.from_cache is True
         assert second.generated_code == first.generated_code
 
-    def test_should_insert_zero_new_db_rows_on_cache_hit(self, generator, mem_settings):
+    def test_should_insert_zero_new_db_rows_on_cache_hit(self, generator, mem_settings) -> None:
         # Arrange
         from common.database import get_session
         from common.models import GeneratedTest
@@ -191,7 +195,7 @@ class TestCacheHit:
             count = session.query(GeneratedTest).count()
         assert count == 1
 
-    def test_should_bypass_cache_when_use_cache_false(self, generator, mem_settings):
+    def test_should_bypass_cache_when_use_cache_false(self, generator, mem_settings) -> None:
         # Arrange
         from common.database import get_session
         from common.models import GeneratedTest
@@ -213,7 +217,7 @@ class TestOutputFileCreation:
 
     def test_should_create_parent_dirs_and_write_correct_content(
         self, generator, tmp_path, mock_claude
-    ):
+    ) -> None:
         # Arrange
         _, expected_code = mock_claude
         output_path = tmp_path / "nested" / "deep" / "test_output.ts"
@@ -228,7 +232,7 @@ class TestOutputFileCreation:
         assert written == expected_code
         assert response.output_file_path is not None
 
-    def test_should_still_succeed_when_output_file_is_none(self, generator):
+    def test_should_still_succeed_when_output_file_is_none(self, generator) -> None:
         # Arrange
         req = _playwright_request(output_file=None)
         # Act
@@ -241,7 +245,7 @@ class TestOutputFileCreation:
 class TestClaudeAPIErrorPropagation:
     """Ensure ClaudeAPIError from the client bubbles out of generate()."""
 
-    def test_should_propagate_claude_api_error_when_client_raises(self, generator, mocker):
+    def test_should_propagate_claude_api_error_when_client_raises(self, generator, mocker) -> None:
         from common.exceptions import ClaudeAPIError
 
         # Arrange
@@ -258,7 +262,7 @@ class TestValidationFailurePersistence:
 
     def test_should_persist_record_with_validation_passed_false_on_bad_code(
         self, generator, mocker, mem_settings
-    ):
+    ) -> None:
         from common.database import get_session
         from common.models import GeneratedTest
 
@@ -280,7 +284,7 @@ class TestValidationFailurePersistence:
 class TestSystemPromptSafety:
     """User-supplied requirement text MUST NOT appear in SYSTEM_PROMPT."""
 
-    def test_should_not_contain_user_content_in_system_prompt(self):
+    def test_should_not_contain_user_content_in_system_prompt(self) -> None:
         from ai_test_generator.prompts import SYSTEM_PROMPT
 
         # Sample user-supplied text that might be injected

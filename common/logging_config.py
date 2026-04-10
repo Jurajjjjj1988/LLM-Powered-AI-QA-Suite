@@ -24,9 +24,9 @@ def configure_logging(settings: Settings, tool_name: str = "qa-suite") -> None:
     # Inject tool name into every log record
     old_factory = logging.getLogRecordFactory()
 
-    def record_factory(*args, **kwargs):  # type: ignore[no-untyped-def]
+    def record_factory(*args: object, **kwargs: object) -> logging.LogRecord:
         record = old_factory(*args, **kwargs)
-        record.tool = tool_name
+        record.tool = tool_name  # type: ignore[attr-defined]
         return record
 
     logging.setLogRecordFactory(record_factory)
