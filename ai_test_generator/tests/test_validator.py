@@ -264,3 +264,23 @@ class TestSanitizeRequirement:
 
         with pytest.raises(SanitizationError):
             self._sanitize("         ")
+
+
+class TestPlaywrightBlueprintBar:
+    def test_should_fail_when_positional_nth_locator_used(self):
+        code = (
+            VALID_PLAYWRIGHT
+            + "\ntest('x', async ({ page }) => { await page.getByRole('button').nth(2).click(); });\n"
+        )
+        result = validate_generated_code(code, "playwright")
+        assert result.passed is False
+        assert any("nth" in r.lower() for r in result.reasons)
+
+    def test_should_fail_when_hard_wait_used(self):
+        code = (
+            VALID_PLAYWRIGHT
+            + "\ntest('y', async ({ page }) => { await page.waitForTimeout(1000); });\n"
+        )
+        result = validate_generated_code(code, "playwright")
+        assert result.passed is False
+        assert any("wait" in r.lower() for r in result.reasons)
