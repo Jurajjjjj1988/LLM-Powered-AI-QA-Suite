@@ -54,12 +54,19 @@ def cli() -> None:
     default=True,
     help="Print generated code to stdout.",
 )
+@click.option(
+    "--url",
+    default=None,
+    help="Closed loop: run the generated Playwright test against this base URL and "
+    "repair until it passes. Requires --output-file + Node/Playwright installed.",
+)
 def generate_cmd(
     requirement: str,
     framework: str,
     output_file: str | None,
     no_cache: bool,
     show_code: bool,
+    url: str | None,
 ) -> None:
     """Generate tests for REQUIREMENT (a plain-text description of the feature)."""
     settings = get_settings()
@@ -72,9 +79,14 @@ def generate_cmd(
         use_cache=not no_cache,
     )
 
+    verified = None
     try:
         generator = TestGenerator(settings)
-        response = generator.generate(request)
+        if url:
+            verified = generator.generate_and_verify(request, base_url=url)
+            response = verified.response
+        else:
+            response = generator.generate(request)
     except SanitizationError as exc:
         click.echo(f"Input error: {exc}", err=True)
         sys.exit(1)
@@ -95,6 +107,10 @@ def generate_cmd(
 
     if response.output_file_path:
         click.echo(f"Written to: {response.output_file_path}")
+
+    if verified is not None and verified.execution_passed is not None:
+        verdict = "GREEN" if verified.execution_passed else "RED"
+        click.echo(f"Closed loop: execution={verdict}  repairs={verified.repair_attempts}")
 
     if not response.validation_passed:
         click.echo(
