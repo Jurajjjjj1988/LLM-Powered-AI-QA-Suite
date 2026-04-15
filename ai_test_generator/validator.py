@@ -115,6 +115,43 @@ _VALIDATORS = {
 # ---------------------------------------------------------------------------
 
 
+_TEST_UNIT_PATTERN = {
+    "playwright": r"\btest\s*\(",
+    "cypress": r"\bit\s*\(",
+    "selenium": r"def\s+test_",
+}
+
+
+def validate_ticket_coverage(
+    code: str, framework: str, criteria_count: int, ticket_key: str
+) -> ValidationResult:
+    """Verify generated code actually covers a ticket: enough tests + traceable to the key.
+
+    The "good tests, not bad tests" gate — one test per acceptance criterion. Fails if
+    there are fewer test blocks than criteria, or the ticket key is absent (so a test
+    can't be traced back to what it verifies).
+    """
+    reasons: list[str] = []
+    pattern = _TEST_UNIT_PATTERN.get(framework.lower(), _TEST_UNIT_PATTERN["playwright"])
+    test_count = len(re.findall(pattern, code))
+    if test_count < criteria_count:
+        reasons.append(
+            f"Only {test_count} test(s) for {criteria_count} acceptance criteria — "
+            "expected at least one test per criterion"
+        )
+
+    # Per-criterion traceability: each AC<i> tag must actually appear (not just a count).
+    missing = [f"AC{i}" for i in range(1, criteria_count + 1) if not re.search(rf"\bAC{i}\b", code)]
+    if missing:
+        shown = ", ".join(missing[:5]) + ("…" if len(missing) > 5 else "")
+        reasons.append(f"Missing per-criterion traceability tag(s): {shown}")
+
+    # Key must appear as a whole token (so 'AB-1' does not match inside 'AB-12').
+    if not re.search(rf"(?<![A-Za-z0-9]){re.escape(ticket_key)}(?![A-Za-z0-9])", code):
+        reasons.append(f"Ticket key {ticket_key!r} not referenced — tests are not traceable")
+    return ValidationResult(passed=len(reasons) == 0, reasons=reasons)
+
+
 def validate_generated_code(code: str, framework: str) -> ValidationResult:
     """
     Validate that *code* looks like a valid test file for *framework*.

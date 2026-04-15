@@ -101,6 +101,80 @@ def build_repair_message(framework: str, current_code: str, failure_output: str)
     )
 
 
+_FRAMEWORK_CONVENTIONS = {
+    "playwright": (
+        "- Two parts in ONE file: a Page Object class, then the spec that uses it.\n"
+        "- Locators are `readonly` fields labelled via `.describe('[PageName] …')`;\n"
+        "  actions are METHODS, so the spec reads as user intent, not raw selectors.\n"
+        "- STABLE selectors only: `getByRole` > `getByLabel` > `getByPlaceholder` >\n"
+        "  `getByTestId`. NEVER a CSS class as primary locator and NEVER `.nth()`.\n"
+        "- `import { test, expect, type Page, type Locator } from '@playwright/test';`\n"
+        "- Web-first assertions only; NO `waitForTimeout`, NO manual `waitForSelector`."
+    ),
+    "cypress": (
+        "- Wrap tests in `describe()`, one `it()` per acceptance criterion.\n"
+        "- Use `cy.get()`/`cy.contains()`/`.should()`; `beforeEach` with `cy.visit()`.\n"
+        "- Return ONLY the TypeScript source code."
+    ),
+    "selenium": (
+        "- pytest + selenium; one `def test_...` per acceptance criterion.\n"
+        "- Fixtures for driver setup/teardown; explicit `WebDriverWait`, never `time.sleep`.\n"
+        "- Return ONLY the Python source code."
+    ),
+}
+
+_TEST_UNIT = {"playwright": "test()", "cypress": "it()", "selenium": "def test_"}
+
+
+def build_ticket_user_message(
+    key: str,
+    summary: str,
+    description: str,
+    acceptance_criteria: list[str],
+    definition_of_done: list[str],
+    framework: str,
+) -> str:
+    """Build the user message that generates tests FROM a ticket's acceptance criteria.
+
+    Enforces the tool's real contract: ONE traceable test per acceptance criterion,
+    each named/tagged with its criterion + the ticket key, plus assertions covering
+    the Definition of Done. The criteria are listed explicitly so the model covers
+    every one — not a vague paraphrase.
+    """
+    fw = framework.lower()
+    conventions = _FRAMEWORK_CONVENTIONS.get(fw, _FRAMEWORK_CONVENTIONS["playwright"])
+    unit = _TEST_UNIT.get(fw, "test()")
+
+    ac_block = "\n".join(f"  AC{i}: {c}" for i, c in enumerate(acceptance_criteria, 1))
+    dod_block = (
+        "\n".join(f"  - {d}" for d in definition_of_done)
+        if definition_of_done
+        else "  (none specified)"
+    )
+    desc = description.strip() or "(no extra description)"
+
+    return (
+        f"Generate a {framework} test suite that verifies EVERY acceptance criterion of "
+        "this ticket. This is a real work item — cover exactly what it specifies, do not "
+        "invent unrelated behaviour.\n\n"
+        f"Ticket {key}: {summary}\n"
+        f"Description: {desc}\n\n"
+        f"Acceptance criteria (write ONE {unit} per criterion, in this order):\n"
+        f"{ac_block}\n\n"
+        "Definition of Done (add assertions/tests that cover these too):\n"
+        f"{dod_block}\n\n"
+        "Traceability (MANDATORY):\n"
+        f"- Group the tests under a suite named '{key}: {summary}'.\n"
+        f"- Name each test starting with its criterion id, e.g. 'AC1: <criterion>'.\n"
+        "- Cover EVERY criterion with its own test — do NOT merge, skip, or combine two\n"
+        f"  criteria into one test. Every AC id from AC1 to AC{len(acceptance_criteria)} must appear.\n"
+        f"- There MUST be at least as many {unit} blocks as acceptance criteria above.\n\n"
+        "Code conventions (follow ALL):\n"
+        f"{conventions}\n\n"
+        "Return ONLY the source code. No markdown fences, no explanations."
+    )
+
+
 # Dispatch table so generate_tests.py can call build_user_message(framework, req)
 _FRAMEWORK_BUILDERS = {
     "playwright": build_playwright_user_message,
