@@ -9,9 +9,8 @@ step) can accept a green result or feed a red one back to the model.
 
 ``parse_playwright_verdict`` is a pure function (unit-tested); ``run_playwright_test``
 is the thin subprocess wrapper around it. Green requires a *real* tally — exit 0
-AND ``passed >= 1`` AND zero failed/flaky/timed-out — the same false-green defence
-proven in the sibling PWmodernizer closed loop (a bare "passed" substring or an
-all-skipped run must NOT count as green).
+AND ``passed >= 1`` AND zero failed/flaky/timed-out — a deliberate false-green
+defence (a bare "passed" substring or an all-skipped run must NOT count as green).
 """
 
 from __future__ import annotations
