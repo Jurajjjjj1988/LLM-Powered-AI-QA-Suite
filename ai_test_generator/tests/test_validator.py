@@ -26,17 +26,7 @@ Pattern: AAA unit tests, no DB or network required.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import pytest
-
-TOOL_ROOT = Path(__file__).parent.parent
-REPO_ROOT = TOOL_ROOT.parent
-
-for p in (str(TOOL_ROOT), str(REPO_ROOT)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
 from ai_test_generator.validator import validate_generated_code
 

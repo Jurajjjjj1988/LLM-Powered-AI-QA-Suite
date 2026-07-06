@@ -20,17 +20,8 @@ No DB or network access. Uses tmp_path for file-based tests.
 from __future__ import annotations
 
 import json
-import sys
-from pathlib import Path
 
 import pytest
-
-TOOL_ROOT = Path(__file__).parent.parent
-REPO_ROOT = TOOL_ROOT.parent
-
-for p in (str(TOOL_ROOT), str(REPO_ROOT)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
 from ai_test_analyzer.log_parser import parse_log_entries, parse_log_file
 
@@ -130,7 +121,7 @@ class TestJUnitXmlParser:
     def test_should_parse_time_attribute_as_float(self, tmp_path):
         p = _write(tmp_path, "r.xml", JUNIT_SINGLE_SUITE)
         entries = parse_log_file(p)
-        valid_login = [e for e in entries if "test_valid_login" in e.test][0]
+        valid_login = next(e for e in entries if "test_valid_login" in e.test)
         assert isinstance(valid_login.duration, float)
         assert valid_login.duration == pytest.approx(1.2)
 

@@ -15,18 +15,10 @@ All DB access uses SQLite :memory:. ClaudeClient is always mocked.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-TOOL_ROOT = Path(__file__).parent.parent
-REPO_ROOT = TOOL_ROOT.parent
-
-for p in (str(TOOL_ROOT), str(REPO_ROOT)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
 from ai_test_analyzer.analyze_flaky import (
     FlakyAnalyzer,
@@ -244,7 +236,7 @@ class TestPersistence:
                 "ai_test_analyzer.analyze_flaky.save_flaky_run",
                 side_effect=Exception("disk full"),
             ),
-            pytest.raises(Exception),
+            pytest.raises(Exception, match="disk full"),
         ):
             analyzer.analyze(FlakyAnalysisRequest(logs=logs))
 

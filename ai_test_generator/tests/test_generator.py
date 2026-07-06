@@ -18,21 +18,10 @@ ClaudeClient is always mocked — no real API calls are ever made.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-# ---------------------------------------------------------------------------
-# Path bootstrap – allow imports relative to ai-test-generator/
-# ---------------------------------------------------------------------------
-TOOL_ROOT = Path(__file__).parent.parent
-REPO_ROOT = TOOL_ROOT.parent
-
-for p in (str(TOOL_ROOT), str(REPO_ROOT)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -158,11 +147,11 @@ class TestStripCodeFences:
         assert "import pytest" in result
 
     def test_should_handle_only_opening_fence_without_closing(self):
-        # Arrange – model forgot to close the fence
+        # Arrange - model forgot to close the fence
         raw = "```typescript\nimport { test } from '@playwright/test';"
         # Act
         result = self._strip(raw)
-        # Assert – opening fence stripped, trailing content kept
+        # Assert - opening fence stripped, trailing content kept
         assert "```typescript" not in result
         assert "import { test }" in result
 

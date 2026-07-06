@@ -1,3 +1,4 @@
+# ruff: noqa: F811, E402  (test harness pending the FastAPI DI refactor; see module skip reason)
 """
 Test strategy for ai-quality-dashboard / app.py
 ================================================
@@ -21,29 +22,18 @@ No real API keys or external services are used.
 
 from __future__ import annotations
 
-import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-TOOL_ROOT = Path(__file__).parent.parent
-REPO_ROOT = TOOL_ROOT.parent
-
-for p in (str(TOOL_ROOT), str(REPO_ROOT)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
-
-
 # ---------------------------------------------------------------------------
 # In-memory DB bootstrap
 # ---------------------------------------------------------------------------
-
 # We need to set up the DB BEFORE importing app (which runs init_db on import).
 # Use a module-level :memory: engine, patch the settings, and reset the
 # module-level engine singleton before each test class/fixture.
-
 import pytest as _pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
