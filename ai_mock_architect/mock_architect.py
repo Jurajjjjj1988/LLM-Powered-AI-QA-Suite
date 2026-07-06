@@ -120,7 +120,7 @@ async def _run_agent_pipeline(spec_source: str, cwd: str, api_key: str) -> str:
             cwd=cwd,
             allowed_tools=tools,
             permission_mode="acceptEdits",
-            model="claude-opus-4-6",
+            model="claude-opus-4-8",
             system_prompt=ORCHESTRATOR_PROMPT,
             env={"ANTHROPIC_API_KEY": api_key},
             agents={
@@ -200,7 +200,7 @@ def _run_direct_api(spec_source: str, api_key: str) -> dict[str, str]:
     )
 
     with client.messages.stream(
-        model="claude-opus-4-6",
+        model="claude-opus-4-8",
         max_tokens=8192,
         thinking={"type": "adaptive"},
         system=system,
