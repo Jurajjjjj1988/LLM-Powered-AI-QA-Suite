@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # Database
     db_path: Path = Path("~/ai-qa-projects/qa_suite.db").expanduser()
 
+    # Agent prompts (used by ai-debug-accelerator + ai-mock-architect)
+    # Override via env var: PROMPTS_DIR=/path/to/prompts
+    prompts_dir: Path = Path("~/ai-agents/prompts").expanduser()
+
     # Generator
     generator_default_framework: str = "playwright"
     generator_output_dir: Path = Path("./generated")
@@ -48,9 +52,7 @@ class Settings(BaseSettings):
     @classmethod
     def validate_api_key(cls, v: str) -> str:
         if not _API_KEY_RE.match(v):
-            raise ValueError(
-                "ANTHROPIC_API_KEY must match pattern sk-ant-api##-<90+ chars>"
-            )
+            raise ValueError("ANTHROPIC_API_KEY must match pattern sk-ant-api##-<90+ chars>")
         return v
 
 

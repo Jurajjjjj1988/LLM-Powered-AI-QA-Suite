@@ -92,7 +92,5 @@ def build_user_message(framework: str, requirement: str) -> str:
     builder = _FRAMEWORK_BUILDERS.get(framework.lower())
     if builder is None:
         supported = ", ".join(_FRAMEWORK_BUILDERS)
-        raise ValueError(
-            f"Unknown framework {framework!r}. Supported: {supported}"
-        )
+        raise ValueError(f"Unknown framework {framework!r}. Supported: {supported}")
     return builder(requirement)

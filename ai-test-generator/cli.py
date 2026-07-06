@@ -6,19 +6,19 @@ Usage examples:
   python cli.py generate "..." --framework cypress --output-file ./out/login.spec.ts
   python cli.py generate "..." --no-cache
 """
+
 from __future__ import annotations
 
-import sys
 import logging
+import sys
 
 import click
+from generate_tests import TestGenerator
 
 from common.config import get_settings
 from common.exceptions import ClaudeAPIError, SanitizationError
 from common.logging_config import configure_logging
 from common.schemas import GenerateTestsRequest
-
-from generate_tests import TestGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,9 @@ def generate_cmd(
     # Summary
     source = "cache" if response.from_cache else "Claude API"
     valid = "PASSED" if response.validation_passed else "FAILED"
-    click.echo(f"\nGeneration complete  [source={source}  validation={valid}  tokens={response.tokens_used}  id={response.id}]")
+    click.echo(
+        f"\nGeneration complete  [source={source}  validation={valid}  tokens={response.tokens_used}  id={response.id}]"
+    )
 
     if response.output_file_path:
         click.echo(f"Written to: {response.output_file_path}")

@@ -6,6 +6,7 @@ Usage examples:
   python cli.py heal "Email input" "input.email" --html-file page_fragment.html
   python cli.py heal "Submit button" "#submit" "<form>...</form>" --force
 """
+
 from __future__ import annotations
 
 import logging
@@ -13,13 +14,12 @@ import sys
 from pathlib import Path
 
 import click
+from healer import SelfHealingEngine
 
 from common.config import get_settings
 from common.exceptions import ClaudeAPIError, SanitizationError
 from common.logging_config import configure_logging
 from common.schemas import HealSelectorRequest
-
-from healer import SelfHealingEngine
 
 logger = logging.getLogger(__name__)
 
@@ -102,14 +102,15 @@ def heal_cmd(
     source = "cache" if response.from_cache else "Claude API"
     valid = "PASSED" if response.validation_passed else "FAILED"
 
-    click.echo(f"\nHealing complete  [source={source}  validation={valid}  tokens={response.tokens_used}  id={response.id}]")
+    click.echo(
+        f"\nHealing complete  [source={source}  validation={valid}  tokens={response.tokens_used}  id={response.id}]"
+    )
     click.echo(f"  Old selector : {old_selector}")
     click.echo(f"  New selector : {response.new_selector}")
 
     if not response.validation_passed:
         click.echo(
-            "WARNING: the returned selector did not pass CSS validation. "
-            "Use it with caution.",
+            "WARNING: the returned selector did not pass CSS validation. Use it with caution.",
             err=True,
         )
 

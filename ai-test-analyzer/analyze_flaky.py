@@ -8,12 +8,15 @@ Orchestration flow:
   4. Persist FlakyTestRun + FlakyTestResult rows
   5. Return FlakyAnalysisResponse
 """
+
 from __future__ import annotations
 
 import logging
 from collections import defaultdict
 
+from prompts import SYSTEM_PROMPT, build_batch_user_message
 from pydantic import BaseModel
+from repository import save_flaky_run
 
 from common.claude_client import ClaudeClient
 from common.config import Settings, get_settings
@@ -26,13 +29,10 @@ from common.schemas import (
     TestLogEntry,
 )
 
-from prompts import SYSTEM_PROMPT, build_batch_user_message
-from repository import save_flaky_run
-
-
 # ---------------------------------------------------------------------------
 # Structured output schemas for Claude's batch analysis response
 # ---------------------------------------------------------------------------
+
 
 class _TestSuggestion(BaseModel):
     test_name: str
@@ -85,9 +85,7 @@ class FlakyAnalyzer:
 
         # 2. Filter flaky tests by threshold
         threshold = self._settings.analyzer_flaky_threshold_percent
-        flaky_stats = {
-            name: s for name, s in stats.items() if s["fail_rate"] >= threshold
-        }
+        flaky_stats = {name: s for name, s in stats.items() if s["fail_rate"] >= threshold}
         logger.info(
             "Flaky test detection complete",
             extra={
@@ -156,7 +154,7 @@ class FlakyAnalyzer:
             suggestion_text: str | None = None
             s = suggestion_map.get(item["test_name"])
             if s and (s.root_cause or s.fixes):
-                fix_lines = "\n".join(f"  {i+1}. {f}" for i, f in enumerate(s.fixes))
+                fix_lines = "\n".join(f"  {i + 1}. {f}" for i, f in enumerate(s.fixes))
                 suggestion_text = f"Root cause: {s.root_cause}\nFixes:\n{fix_lines}".strip()
 
             results.append(
@@ -193,7 +191,11 @@ class FlakyAnalyzer:
 
         logger.debug(
             "Claude structured batch analysis complete",
-            extra={"batch_size": len(batch), "tokens": tokens, "suggestions": len(result.suggestions)},
+            extra={
+                "batch_size": len(batch),
+                "tokens": tokens,
+                "suggestions": len(result.suggestions),
+            },
         )
         return result.suggestions
 
@@ -201,6 +203,7 @@ class FlakyAnalyzer:
 # ---------------------------------------------------------------------------
 # Module-level helpers
 # ---------------------------------------------------------------------------
+
 
 def _aggregate_stats(entries: list[TestLogEntry]) -> dict[str, dict]:
     """

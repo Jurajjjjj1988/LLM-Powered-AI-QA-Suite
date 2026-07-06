@@ -23,6 +23,7 @@ Coverage targets:
 
 Pattern: AAA unit tests, no DB or network required.
 """
+
 from __future__ import annotations
 
 import sys
@@ -38,7 +39,6 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
         sys.path.insert(0, p)
 
 from validator import validate_generated_code
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -84,6 +84,7 @@ VALID_SELENIUM = (
 # Playwright validation
 # ---------------------------------------------------------------------------
 
+
 class TestPlaywrightValidator:
     def test_should_pass_when_code_is_valid_playwright(self):
         result = validate_generated_code(VALID_PLAYWRIGHT, "playwright")
@@ -92,9 +93,7 @@ class TestPlaywrightValidator:
 
     def test_should_fail_when_import_statement_is_missing(self):
         # Arrange: remove the import line
-        code = VALID_PLAYWRIGHT.replace(
-            "import { test, expect } from '@playwright/test';\n", ""
-        )
+        code = VALID_PLAYWRIGHT.replace("import { test, expect } from '@playwright/test';\n", "")
         # Act
         result = validate_generated_code(code, "playwright")
         # Assert
@@ -119,10 +118,7 @@ class TestPlaywrightValidator:
 
     def test_should_pass_with_spaced_import_variant(self):
         # Alternate style: import {test, expect}
-        code = VALID_PLAYWRIGHT.replace(
-            "import { test, expect }",
-            "import {test, expect}"
-        )
+        code = VALID_PLAYWRIGHT.replace("import { test, expect }", "import {test, expect}")
         result = validate_generated_code(code, "playwright")
         assert result.passed is True
 
@@ -134,6 +130,7 @@ class TestPlaywrightValidator:
 # ---------------------------------------------------------------------------
 # Cypress validation
 # ---------------------------------------------------------------------------
+
 
 class TestCypressValidator:
     def test_should_pass_when_code_is_valid_cypress(self):
@@ -163,6 +160,7 @@ class TestCypressValidator:
 # Selenium validation
 # ---------------------------------------------------------------------------
 
+
 class TestSeleniumValidator:
     def test_should_pass_when_code_is_valid_selenium(self):
         result = validate_generated_code(VALID_SELENIUM, "selenium")
@@ -190,6 +188,7 @@ class TestSeleniumValidator:
 # ---------------------------------------------------------------------------
 # validate_generated_code() edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestValidateGeneratedCodeEdgeCases:
     def test_should_fail_when_code_is_empty_string(self):
@@ -219,26 +218,31 @@ class TestValidateGeneratedCodeEdgeCases:
 # sanitize_requirement() boundary/edge tests
 # ---------------------------------------------------------------------------
 
+
 class TestSanitizeRequirement:
     """These live here rather than a separate sanitizer test file so the
     generator test suite is self-contained for the critical generator cases."""
 
     def _sanitize(self, text, **kw):
         from common.sanitizer import sanitize_requirement
+
         return sanitize_requirement(text, **kw)
 
     def test_should_raise_sanitization_error_when_text_under_10_chars(self):
         from common.exceptions import SanitizationError
+
         with pytest.raises(SanitizationError, match="too short"):
             self._sanitize("short")
 
     def test_should_raise_sanitization_error_when_text_is_empty_string(self):
         from common.exceptions import SanitizationError
+
         with pytest.raises(SanitizationError):
             self._sanitize("")
 
     def test_should_raise_sanitization_error_when_text_exceeds_5000_chars(self):
         from common.exceptions import SanitizationError
+
         with pytest.raises(SanitizationError, match="exceeds"):
             self._sanitize("A" * 5001)
 
@@ -267,5 +271,6 @@ class TestSanitizeRequirement:
 
     def test_should_raise_when_only_whitespace(self):
         from common.exceptions import SanitizationError
+
         with pytest.raises(SanitizationError):
             self._sanitize("         ")

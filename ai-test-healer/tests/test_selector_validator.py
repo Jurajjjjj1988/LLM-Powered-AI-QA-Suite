@@ -14,6 +14,7 @@ Coverage targets:
 
 Pure unit tests — no DB, no network.
 """
+
 from __future__ import annotations
 
 import sys
@@ -30,24 +31,27 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
 
 from selector_validator import SelectorValidationResult, validate_css_selector
 
-
 # ---------------------------------------------------------------------------
 # Valid selectors
 # ---------------------------------------------------------------------------
 
+
 class TestValidCssSelectors:
-    @pytest.mark.parametrize("selector", [
-        "button",
-        ".submit-btn",
-        "#login-form",
-        "div > span",
-        "input[type='email']",
-        "ul li:first-child",
-        "a.nav-link:hover",
-        "form button.btn-primary",
-        "[data-testid='submit']",
-        "div.container > .row:nth-child(2)",
-    ])
+    @pytest.mark.parametrize(
+        "selector",
+        [
+            "button",
+            ".submit-btn",
+            "#login-form",
+            "div > span",
+            "input[type='email']",
+            "ul li:first-child",
+            "a.nav-link:hover",
+            "form button.btn-primary",
+            "[data-testid='submit']",
+            "div.container > .row:nth-child(2)",
+        ],
+    )
     def test_should_accept_valid_css_selector(self, selector):
         result = validate_css_selector(selector)
         assert result.valid is True
@@ -62,12 +66,16 @@ class TestValidCssSelectors:
 # XPath rejection
 # ---------------------------------------------------------------------------
 
+
 class TestXPathRejection:
-    @pytest.mark.parametrize("xpath", [
-        "//div[@class='submit']",
-        "/html/body/button",
-        "//input[@type='text']",
-    ])
+    @pytest.mark.parametrize(
+        "xpath",
+        [
+            "//div[@class='submit']",
+            "/html/body/button",
+            "//input[@type='text']",
+        ],
+    )
     def test_should_reject_xpath_expression(self, xpath):
         result = validate_css_selector(xpath)
         assert result.valid is False
@@ -77,6 +85,7 @@ class TestXPathRejection:
 # ---------------------------------------------------------------------------
 # Empty and whitespace
 # ---------------------------------------------------------------------------
+
 
 class TestEmptyAndWhitespace:
     def test_should_reject_empty_string(self):
@@ -102,6 +111,7 @@ class TestEmptyAndWhitespace:
 # Very long selectors
 # ---------------------------------------------------------------------------
 
+
 class TestLongSelectors:
     def test_should_handle_512_char_selector_without_raising(self):
         """512-char selector — validate_css_selector must not raise."""
@@ -123,6 +133,7 @@ class TestLongSelectors:
 # ---------------------------------------------------------------------------
 # SelectorValidationResult protocol
 # ---------------------------------------------------------------------------
+
 
 class TestSelectorValidationResult:
     def test_should_bool_false_when_valid_is_false(self):
@@ -147,22 +158,24 @@ class TestSelectorValidationResult:
 # Never-raise contract
 # ---------------------------------------------------------------------------
 
+
 class TestNeverRaiseContract:
-    @pytest.mark.parametrize("selector", [
-        "",
-        "NONE",
-        "//xpath",
-        "???!!!",
-        "\x00\x01",
-        "a" * 10000,
-        "::invalid-pseudo",
-    ])
+    @pytest.mark.parametrize(
+        "selector",
+        [
+            "",
+            "NONE",
+            "//xpath",
+            "???!!!",
+            "\x00\x01",
+            "a" * 10000,
+            "::invalid-pseudo",
+        ],
+    )
     def test_should_never_raise_exception_for_any_input(self, selector):
         """validate_css_selector must return a result, never raise."""
         try:
             result = validate_css_selector(selector)
             assert isinstance(result, SelectorValidationResult)
         except Exception as exc:
-            pytest.fail(
-                f"validate_css_selector raised for input {selector!r}: {exc}"
-            )
+            pytest.fail(f"validate_css_selector raised for input {selector!r}: {exc}")

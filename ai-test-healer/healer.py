@@ -17,16 +17,10 @@ Key design decision — return even invalid selectors with a warning:
   is still potentially useful diagnostic info for the engineer.  The caller
   sees the warning via response.validation_passed=False.
 """
+
 from __future__ import annotations
 
 import logging
-
-from common.claude_client import ClaudeClient
-from common.config import Settings, get_settings
-from common.database import get_session, init_db
-from common.exceptions import ClaudeAPIError, SanitizationError
-from common.sanitizer import hash_text, sanitize_html_snippet, sanitize_selector
-from common.schemas import HealSelectorRequest, HealSelectorResponse
 
 from prompts import SYSTEM_PROMPT, build_heal_user_message
 from repository import (
@@ -35,6 +29,13 @@ from repository import (
     save_healed_selector,
 )
 from selector_validator import validate_css_selector
+
+from common.claude_client import ClaudeClient
+from common.config import Settings, get_settings
+from common.database import get_session, init_db
+from common.exceptions import ClaudeAPIError, SanitizationError
+from common.sanitizer import hash_text, sanitize_html_snippet, sanitize_selector
+from common.schemas import HealSelectorRequest, HealSelectorResponse
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +192,7 @@ class SelfHealingEngine:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _extract_selector(raw: str) -> str:
     """

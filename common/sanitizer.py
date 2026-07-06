@@ -40,9 +40,7 @@ def sanitize_selector(selector: str) -> str:
     if len(selector) > 500:
         raise SanitizationError("Selector exceeds 500 characters")
     if not _CSS_SELECTOR_RE.match(selector):
-        raise SanitizationError(
-            f"Selector contains disallowed characters: {selector!r}"
-        )
+        raise SanitizationError(f"Selector contains disallowed characters: {selector!r}")
     return selector
 
 

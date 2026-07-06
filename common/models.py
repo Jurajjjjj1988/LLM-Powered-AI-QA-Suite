@@ -55,9 +55,7 @@ class FlakyTestResult(Base):
     __tablename__ = "flaky_test_results"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    run_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("flaky_test_runs.id"), nullable=False
-    )
+    run_id: Mapped[int] = mapped_column(Integer, ForeignKey("flaky_test_runs.id"), nullable=False)
     test_name: Mapped[str] = mapped_column(String(256), nullable=False)
     fail_rate: Mapped[float] = mapped_column(Float, nullable=False)
     total_runs: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -75,9 +73,7 @@ class HealedSelector(Base):
     __tablename__ = "healed_selectors"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    healed_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
-    )
+    healed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
     description: Mapped[str] = mapped_column(String(256), nullable=False)
     old_selector: Mapped[str] = mapped_column(String(512), nullable=False)
     new_selector: Mapped[str] = mapped_column(String(512), nullable=False)
@@ -87,6 +83,4 @@ class HealedSelector(Base):
     validation_passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     applied_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    __table_args__ = (
-        Index("ix_healed_old_selector_html", "old_selector", "html_context_hash"),
-    )
+    __table_args__ = (Index("ix_healed_old_selector_html", "old_selector", "html_context_hash"),)

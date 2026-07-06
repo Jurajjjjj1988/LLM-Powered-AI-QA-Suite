@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine

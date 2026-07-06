@@ -15,13 +15,12 @@ Focus areas:
 All DB access uses SQLite :memory: via a patched Settings object.
 ClaudeClient is always mocked — no real API calls are ever made.
 """
+
 from __future__ import annotations
 
-import importlib
 import sys
-import types
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -38,6 +37,7 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def mem_settings(tmp_path):
@@ -90,6 +90,7 @@ def generator(mem_settings, mock_claude):
 
     # Reset the module-level DB engine singleton so each test gets fresh state
     import common.database as _db
+
     _db._engine = None
     _db._SessionLocal = None
 
@@ -102,8 +103,10 @@ def generator(mem_settings, mock_claude):
 # Helper
 # ---------------------------------------------------------------------------
 
+
 def _playwright_request(requirement="Log in to the application with valid credentials", **kw):
     from common.schemas import GenerateTestsRequest
+
     return GenerateTestsRequest(requirement=requirement, framework="playwright", **kw)
 
 
@@ -111,11 +114,13 @@ def _playwright_request(requirement="Log in to the application with valid creden
 # Tests
 # ---------------------------------------------------------------------------
 
+
 class TestStripCodeFences:
     """Unit tests for the module-level _strip_code_fences helper."""
 
     def _strip(self, text):
         from generate_tests import _strip_code_fences
+
         return _strip_code_fences(text)
 
     def test_should_remove_typescript_fence_when_present(self):
@@ -169,9 +174,7 @@ class TestStripCodeFences:
 class TestCacheHit:
     """Verify that a second identical request returns from_cache=True."""
 
-    def test_should_return_from_cache_true_when_same_requirement_called_twice(
-        self, generator
-    ):
+    def test_should_return_from_cache_true_when_same_requirement_called_twice(self, generator):
         # Arrange
         req = _playwright_request(use_cache=True)
 
@@ -250,9 +253,7 @@ class TestOutputFileCreation:
 class TestClaudeAPIErrorPropagation:
     """Ensure ClaudeAPIError from the client bubbles out of generate()."""
 
-    def test_should_propagate_claude_api_error_when_client_raises(
-        self, generator, mocker
-    ):
+    def test_should_propagate_claude_api_error_when_client_raises(self, generator, mocker):
         from common.exceptions import ClaudeAPIError
 
         # Arrange

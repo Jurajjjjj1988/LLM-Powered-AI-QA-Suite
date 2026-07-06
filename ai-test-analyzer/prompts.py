@@ -7,6 +7,7 @@ and no defensive JSON parsing is needed in the analyzer.
 
 System prompt is STATIC — no user content ever enters it.
 """
+
 from __future__ import annotations
 
 import json
