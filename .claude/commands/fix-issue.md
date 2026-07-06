@@ -1,0 +1,1 @@
+Given an issue/bug: (1) reproduce it with a failing test (pytest, Claude mocked), (2) fix the cause following `.claude/rules/`, (3) confirm `.venv/bin/ruff check .` + `.venv/bin/pytest -q` green, (4) branch → PR. Never fix without a reproducing test first.
