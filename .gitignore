@@ -22,3 +22,7 @@ CLAUDE.local.md
 
 # Generated debug reports (artifact, not source)
 **/ai_debug_report.md
+
+# macOS
+.DS_Store
+**/.DS_Store

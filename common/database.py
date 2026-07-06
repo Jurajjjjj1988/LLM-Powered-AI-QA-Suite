@@ -21,7 +21,9 @@ def _get_engine(db_path: Path) -> Engine:
     if _engine is None:
         url = f"sqlite:///{db_path}"
         _engine = create_engine(url, connect_args={"check_same_thread": False})
-        _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+        _SessionLocal = sessionmaker(
+            bind=_engine, autoflush=False, autocommit=False, expire_on_commit=False
+        )
         logger.info("Database engine created", extra={"db_path": str(db_path)})
     return _engine
 

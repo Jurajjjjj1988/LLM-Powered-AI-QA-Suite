@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str
-    claude_model: str = "claude-opus-4-6"
+    claude_model: str = "claude-opus-4-8"
     claude_max_tokens: int = 4096
     claude_timeout_seconds: int = 60
 
