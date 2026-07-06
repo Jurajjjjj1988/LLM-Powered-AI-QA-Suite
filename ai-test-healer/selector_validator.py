@@ -13,6 +13,7 @@ Why cssselect and not a regex?
   over-restrictive.  cssselect uses a full grammar and raises
   `cssselect.SelectorSyntaxError` on invalid input.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class SelectorValidationResult:
-    __slots__ = ("valid", "reason")
+    __slots__ = ("reason", "valid")
 
     def __init__(self, valid: bool, reason: str = "") -> None:
         self.valid = valid
@@ -78,15 +79,11 @@ def validate_css_selector(selector: str) -> SelectorValidationResult:
             "CSS selector syntax error",
             extra={"selector": stripped, "error": str(exc)},
         )
-        return SelectorValidationResult(
-            valid=False, reason=f"SelectorSyntaxError: {exc}"
-        )
+        return SelectorValidationResult(valid=False, reason=f"SelectorSyntaxError: {exc}")
     except Exception as exc:
         # cssselect can occasionally raise other exceptions on extreme inputs
         logger.warning(
             "Unexpected error during CSS selector validation",
             extra={"selector": stripped, "error": str(exc)},
         )
-        return SelectorValidationResult(
-            valid=False, reason=f"Unexpected validation error: {exc}"
-        )
+        return SelectorValidationResult(valid=False, reason=f"Unexpected validation error: {exc}")

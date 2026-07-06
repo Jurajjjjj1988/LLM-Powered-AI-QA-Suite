@@ -16,6 +16,7 @@ Coverage targets:
 
 No DB or network access. Uses tmp_path for file-based tests.
 """
+
 from __future__ import annotations
 
 import json
@@ -33,10 +34,10 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
 
 from log_parser import parse_log_entries, parse_log_file
 
-
 # ---------------------------------------------------------------------------
 # JUnit XML helpers
 # ---------------------------------------------------------------------------
+
 
 def _write(tmp_path, filename, content):
     p = tmp_path / filename
@@ -84,6 +85,7 @@ JUNIT_NO_TIME_ATTR = """\
 # ---------------------------------------------------------------------------
 # JUnit XML parsing
 # ---------------------------------------------------------------------------
+
 
 class TestJUnitXmlParser:
     def test_should_parse_single_testsuite_without_wrapper(self, tmp_path):
@@ -149,6 +151,7 @@ class TestJUnitXmlParser:
 # JSON log parsing
 # ---------------------------------------------------------------------------
 
+
 class TestJsonLogParser:
     def test_should_parse_plain_json_array(self, tmp_path):
         data = [{"test": "t1", "status": "PASS", "duration": 1.0}]
@@ -196,6 +199,7 @@ class TestJsonLogParser:
 # Plain-text parsing
 # ---------------------------------------------------------------------------
 
+
 class TestPlainTextParser:
     def test_should_parse_pass_line(self, tmp_path):
         content = "PASS  login_test  2.34s"
@@ -233,6 +237,7 @@ class TestPlainTextParser:
 # ---------------------------------------------------------------------------
 # Error handling
 # ---------------------------------------------------------------------------
+
 
 class TestFileErrors:
     def test_should_raise_file_not_found_when_path_missing(self, tmp_path):

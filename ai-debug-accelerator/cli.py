@@ -6,6 +6,7 @@ Usage:
   python3 cli.py analyze results/report.json --output-dir ./debug-reports
   python3 cli.py analyze test-results.json --open
 """
+
 from __future__ import annotations
 
 import logging

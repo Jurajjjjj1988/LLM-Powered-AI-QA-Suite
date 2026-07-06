@@ -15,6 +15,7 @@ Coverage targets:
 
 All DB access uses SQLite :memory:. ClaudeClient is always mocked.
 """
+
 from __future__ import annotations
 
 import sys
@@ -31,16 +32,18 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
         sys.path.insert(0, p)
 
 from healer import SelfHealingEngine, _extract_selector
-from common.schemas import HealSelectorRequest
 
+from common.schemas import HealSelectorRequest
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def mem_settings():
     from common.config import Settings
+
     settings = Settings.model_construct(
         anthropic_api_key="sk-ant-api03-" + "x" * 90,
         claude_model="claude-test-model",
@@ -65,6 +68,7 @@ def mem_settings():
 def engine(mem_settings, mocker):
     """Construct SelfHealingEngine with mocked Claude and in-memory DB."""
     import common.database as _db
+
     _db._engine = None
     _db._SessionLocal = None
 
@@ -80,6 +84,7 @@ def engine(mem_settings, mocker):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _request(
     old_selector: str = "button#broken",
@@ -99,10 +104,9 @@ def _request(
 # Cache key tests
 # ---------------------------------------------------------------------------
 
+
 class TestCacheKey:
-    def test_should_cache_miss_when_html_differs_with_same_selector(
-        self, engine, mem_settings
-    ):
+    def test_should_cache_miss_when_html_differs_with_same_selector(self, engine, mem_settings):
         """Same selector + different HTML → two Claude calls (no cache hit)."""
         # Arrange
         html_a = "<html><body><button class='submit'>OK</button></body></html>"
@@ -116,9 +120,7 @@ class TestCacheKey:
         # Assert: 2 Claude calls because HTML hashes differ
         assert engine._client.complete.call_count == 2
 
-    def test_should_cache_hit_when_same_selector_and_html(
-        self, engine, mem_settings
-    ):
+    def test_should_cache_hit_when_same_selector_and_html(self, engine, mem_settings):
         """Same selector + same HTML → second call returns from_cache=True."""
         engine._client.complete.return_value = ("button.submit", 20)
         req = _request()
@@ -129,9 +131,7 @@ class TestCacheKey:
         assert first.from_cache is False
         assert second.from_cache is True
 
-    def test_should_increment_applied_count_by_one_on_cache_hit(
-        self, engine, mem_settings
-    ):
+    def test_should_increment_applied_count_by_one_on_cache_hit(self, engine, mem_settings):
         from common.database import get_session
         from common.models import HealedSelector
 
@@ -166,6 +166,7 @@ class TestCacheKey:
 # NONE response handling
 # ---------------------------------------------------------------------------
 
+
 class TestNoneResponse:
     def test_should_persist_with_validation_passed_false_when_claude_returns_none(
         self, engine, mem_settings
@@ -186,9 +187,7 @@ class TestNoneResponse:
         assert record.new_selector == "NONE"
         assert record.validation_passed is False
 
-    def test_should_persist_when_claude_returns_none_in_backticks(
-        self, engine, mem_settings
-    ):
+    def test_should_persist_when_claude_returns_none_in_backticks(self, engine, mem_settings):
         """Edge: model wraps NONE in backticks — _extract_selector strips them."""
         engine._client.complete.return_value = ("`NONE`", 10)
         response = engine.heal(_request())
@@ -199,6 +198,7 @@ class TestNoneResponse:
 # ---------------------------------------------------------------------------
 # Invalid CSS persistence
 # ---------------------------------------------------------------------------
+
 
 class TestInvalidCssPersistence:
     def test_should_persist_with_validation_passed_false_for_xpath_selector(
@@ -218,9 +218,7 @@ class TestInvalidCssPersistence:
             record = session.query(HealedSelector).first()
         assert record.validation_passed is False
 
-    def test_should_not_raise_when_selector_is_invalid_css(
-        self, engine
-    ):
+    def test_should_not_raise_when_selector_is_invalid_css(self, engine):
         """No exception must be raised even if the CSS is invalid."""
         engine._client.complete.return_value = ("???invalid###", 10)
         # Should not raise
@@ -232,6 +230,7 @@ class TestInvalidCssPersistence:
 # ---------------------------------------------------------------------------
 # _extract_selector
 # ---------------------------------------------------------------------------
+
 
 class TestExtractSelector:
     def test_should_strip_backtick_wrapping(self):
@@ -262,6 +261,7 @@ class TestExtractSelector:
 # ---------------------------------------------------------------------------
 # ClaudeAPIError propagation
 # ---------------------------------------------------------------------------
+
 
 class TestClaudeAPIErrorPropagation:
     def test_should_propagate_claude_api_error_from_heal(self, engine):

@@ -102,15 +102,18 @@ class ClaudeClient:
             # JSON schema. Omit thinking here.
             try:
                 response = self._client.messages.parse(**kwargs)
-            except (anthropic.RateLimitError, anthropic.APITimeoutError, anthropic.InternalServerError):
+            except (
+                anthropic.RateLimitError,
+                anthropic.APITimeoutError,
+                anthropic.InternalServerError,
+            ):
                 raise
             except anthropic.APIError as exc:
                 raise ClaudeAPIError(f"Claude API error: {exc}") from exc
 
             if response.parsed_output is None:
                 raise ClaudeAPIError(
-                    "Structured output parsing returned None — "
-                    f"stop_reason={response.stop_reason}"
+                    f"Structured output parsing returned None — stop_reason={response.stop_reason}"
                 )
             tokens = response.usage.input_tokens + response.usage.output_tokens
             logger.debug(
@@ -121,7 +124,11 @@ class ClaudeClient:
 
         try:
             return _call()
-        except (anthropic.RateLimitError, anthropic.APITimeoutError, anthropic.InternalServerError) as exc:
+        except (
+            anthropic.RateLimitError,
+            anthropic.APITimeoutError,
+            anthropic.InternalServerError,
+        ) as exc:
             raise ClaudeAPIError(f"Claude API failed after retries: {exc}") from exc
 
     def _complete_with_retry(
@@ -164,7 +171,11 @@ class ClaudeClient:
                         final = stream.get_final_message()
                 else:
                     final = self._client.messages.create(**kwargs)
-            except (anthropic.RateLimitError, anthropic.APITimeoutError, anthropic.InternalServerError):
+            except (
+                anthropic.RateLimitError,
+                anthropic.APITimeoutError,
+                anthropic.InternalServerError,
+            ):
                 raise
             except anthropic.APIError as exc:
                 raise ClaudeAPIError(f"Claude API error: {exc}") from exc
@@ -183,5 +194,9 @@ class ClaudeClient:
 
         try:
             return _call()
-        except (anthropic.RateLimitError, anthropic.APITimeoutError, anthropic.InternalServerError) as exc:
+        except (
+            anthropic.RateLimitError,
+            anthropic.APITimeoutError,
+            anthropic.InternalServerError,
+        ) as exc:
             raise ClaudeAPIError(f"Claude API failed after retries: {exc}") from exc

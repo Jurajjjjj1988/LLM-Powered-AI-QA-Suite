@@ -14,13 +14,17 @@ Spúšťaj z terminálu mimo Claude Code:
   python3 cli.py generate swagger.json
   python3 cli.py generate https://petstore.swagger.io/v2/swagger.json
 """
+
 from __future__ import annotations
 
-import anyio
 import json
 import logging
 import os
 from pathlib import Path
+
+import anyio
+
+from common.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +32,32 @@ logger = logging.getLogger(__name__)
 # Načítanie agent promptov
 # ---------------------------------------------------------------------------
 
-_PROMPTS_DIR = Path("/Users/kapusansky/ai-agents/prompts")
+
+def _load_prompt(filename: str, prompts_dir: Path) -> str:
+    """Load a prompt file from the configured prompts directory.
+
+    Returns empty string if file doesn't exist — subagent will use its
+    description field as fallback. Logs a warning for visibility.
+    """
+    path = prompts_dir / filename
+    if not path.exists():
+        logger.warning(
+            "Prompt file not found; subagent will run with minimal context",
+            extra={"path": str(path), "filename": filename},
+        )
+        return ""
+    return path.read_text(encoding="utf-8")
 
 
-def _load_prompt(filename: str) -> str:
-    path = _PROMPTS_DIR / filename
-    return path.read_text(encoding="utf-8") if path.exists() else ""
+def _get_prompts() -> tuple[str, str, str]:
+    """Load Architect + SDET + Security prompts using settings-configured dir."""
+    settings = get_settings()
+    return (
+        _load_prompt("ARCHITECT.MD", settings.prompts_dir),
+        _load_prompt("SDET.MD", settings.prompts_dir),
+        _load_prompt("SECURITY.MD", settings.prompts_dir),
+    )
 
-
-ARCHITECT_PROMPT = _load_prompt("ARCHITECT.MD")
-SDET_PROMPT = _load_prompt("SDET.MD")
-SECURITY_PROMPT = _load_prompt("SECURITY.MD")
 
 ORCHESTRATOR_PROMPT = """\
 You are the lead orchestrator for AI Data Mock-Architect.
@@ -71,7 +90,9 @@ JSON format for each data.json:
 
 
 async def _run_agent_pipeline(spec_source: str, cwd: str, api_key: str) -> str:
-    from claude_agent_sdk import query, ClaudeAgentOptions, AgentDefinition, ResultMessage
+    from claude_agent_sdk import AgentDefinition, ClaudeAgentOptions, ResultMessage, query
+
+    architect_prompt, sdet_prompt, security_prompt = _get_prompts()
 
     is_url = spec_source.startswith("http://") or spec_source.startswith("https://")
     read_instruction = (
@@ -109,7 +130,7 @@ async def _run_agent_pipeline(spec_source: str, cwd: str, api_key: str) -> str:
                         "Parses the spec and returns structured list of POST/PUT endpoints "
                         "with full request body schemas."
                     ),
-                    prompt=ARCHITECT_PROMPT,
+                    prompt=architect_prompt,
                     tools=["Read", "WebFetch"],
                 ),
                 "data-generator": AgentDefinition(
@@ -118,7 +139,7 @@ async def _run_agent_pipeline(spec_source: str, cwd: str, api_key: str) -> str:
                         "Creates 5 semantically consistent, GDPR-safe mock data sets "
                         "per endpoint schema. No real PII — all values are fabricated."
                     ),
-                    prompt=SDET_PROMPT,
+                    prompt=sdet_prompt,
                     tools=["Read"],
                 ),
                 "security-auditor": AgentDefinition(
@@ -126,7 +147,7 @@ async def _run_agent_pipeline(spec_source: str, cwd: str, api_key: str) -> str:
                         "Security expert who audits generated mock data for PII leakage. "
                         "Flags real names, emails, phones, or addresses. Returns PASS or violations."
                     ),
-                    prompt=SECURITY_PROMPT,
+                    prompt=security_prompt,
                     tools=["Read"],
                 ),
             },
@@ -152,21 +173,24 @@ def _run_direct_api(spec_source: str, api_key: str) -> dict[str, str]:
     is_url = spec_source.startswith("http://") or spec_source.startswith("https://")
     if is_url:
         import urllib.request
-        with urllib.request.urlopen(spec_source, timeout=15) as resp:  # noqa: S310
+
+        with urllib.request.urlopen(spec_source, timeout=15) as resp:
             spec_content = resp.read().decode("utf-8")
     else:
         spec_content = Path(spec_source).read_text(encoding="utf-8")
 
+    architect_prompt, sdet_prompt, security_prompt = _get_prompts()
+
     client = anthropic.Anthropic(api_key=api_key)
 
     system = (
-        ARCHITECT_PROMPT + "\n\n" + SDET_PROMPT + "\n\n" + SECURITY_PROMPT + "\n\n"
+        architect_prompt + "\n\n" + sdet_prompt + "\n\n" + security_prompt + "\n\n"
         "You are now acting as Architect + SDET + Security auditor combined.\n"
         "Parse the OpenAPI spec, extract POST/PUT endpoints, generate 5 GDPR-safe "
         "synthetic mock data sets per endpoint, verify no PII, then return a JSON object "
         "where each key is the relative file path and each value is the file content string.\n"
-        "Format: { \"mocks/endpoints/POST_users_register/data.json\": \"{...}\", "
-        "\"mocks/README.md\": \"...\" }"
+        'Format: { "mocks/endpoints/POST_users_register/data.json": "{...}", '
+        '"mocks/README.md": "..." }'
     )
 
     user = (
@@ -197,7 +221,7 @@ def _run_direct_api(spec_source: str, api_key: str) -> dict[str, str]:
         # Fallback: extract first { ... } block
         start, end = raw.find("{"), raw.rfind("}")
         if start != -1 and end != -1:
-            return json.loads(raw[start:end + 1])
+            return json.loads(raw[start : end + 1])
         return {}
 
 
@@ -231,7 +255,9 @@ def generate(spec_source: str, output_dir: str | None = None) -> str:
             out = Path(cwd) / rel_path
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(
-                content if isinstance(content, str) else json.dumps(content, indent=2, ensure_ascii=False),
+                content
+                if isinstance(content, str)
+                else json.dumps(content, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
             logger.info("Zapísaný súbor", extra={"path": str(out)})

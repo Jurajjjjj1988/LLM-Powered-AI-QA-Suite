@@ -6,6 +6,7 @@ for each supported framework. Deliberately lightweight — deep AST parsing is
 out of scope; the goal is catching empty or hallucinated non-code responses
 before they hit disk or the database.
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,21 +37,18 @@ class ValidationResult:
 # Framework-specific rule sets
 # ---------------------------------------------------------------------------
 
+
 def _validate_playwright(code: str) -> ValidationResult:
     reasons: list[str] = []
 
     # Must import the test runner
     if "import { test, expect }" not in code and "import {test, expect}" not in code:
-        reasons.append(
-            "Missing `import { test, expect } from '@playwright/test'`"
-        )
+        reasons.append("Missing `import { test, expect } from '@playwright/test'`")
 
     # Count test( call-sites (handles `test(` and `test.only(` / `test.skip(`)
     test_calls = len(re.findall(r"\btest\s*\(", code))
     if test_calls < _MIN_TEST_CALLS:
-        reasons.append(
-            f"Expected at least {_MIN_TEST_CALLS} `test(` call(s), found {test_calls}"
-        )
+        reasons.append(f"Expected at least {_MIN_TEST_CALLS} `test(` call(s), found {test_calls}")
 
     # Must have at least one expect assertion
     if "expect(" not in code:
@@ -70,9 +68,7 @@ def _validate_cypress(code: str) -> ValidationResult:
     if not has_describe:
         reasons.append("No `describe(` block found")
     if not has_it:
-        reasons.append(
-            f"Expected at least {_MIN_TEST_CALLS} `it(` call(s), found 0"
-        )
+        reasons.append(f"Expected at least {_MIN_TEST_CALLS} `it(` call(s), found 0")
     if not has_cy:
         reasons.append("No `cy.` Cypress command usage found")
 
@@ -107,6 +103,7 @@ _VALIDATORS = {
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def validate_generated_code(code: str, framework: str) -> ValidationResult:
     """

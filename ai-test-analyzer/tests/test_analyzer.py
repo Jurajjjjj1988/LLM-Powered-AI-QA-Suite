@@ -12,12 +12,13 @@ Coverage targets:
 
 All DB access uses SQLite :memory:. ClaudeClient is always mocked.
 """
+
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -29,16 +30,18 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
         sys.path.insert(0, p)
 
 from analyze_flaky import FlakyAnalyzer, _aggregate_stats, _parse_suggestions_json
-from common.schemas import FlakyAnalysisRequest, TestLogEntry
 
+from common.schemas import FlakyAnalysisRequest, TestLogEntry
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def mem_settings():
     from common.config import Settings
+
     settings = Settings.model_construct(
         anthropic_api_key="sk-ant-api03-" + "x" * 90,
         claude_model="claude-test-model",
@@ -61,16 +64,16 @@ def mem_settings():
 
 def _make_ai_response(test_names: list[str]) -> str:
     """Build a valid Claude JSON response for given test names."""
-    return json.dumps([
-        {"test_name": n, "root_cause": "timing", "fixes": ["add wait"]}
-        for n in test_names
-    ])
+    return json.dumps(
+        [{"test_name": n, "root_cause": "timing", "fixes": ["add wait"]} for n in test_names]
+    )
 
 
 @pytest.fixture()
 def analyzer(mem_settings, mocker):
     """Construct a FlakyAnalyzer with mocked Claude and in-memory DB."""
     import common.database as _db
+
     _db._engine = None
     _db._SessionLocal = None
 
@@ -87,6 +90,7 @@ def analyzer(mem_settings, mocker):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _entry(test: str, status: str, duration: float = 1.0) -> TestLogEntry:
     return TestLogEntry(test=test, status=status, duration=duration)
@@ -109,23 +113,27 @@ def _make_logs_for_n_tests(n: int, fail_rate: float = 1.0) -> list[TestLogEntry]
 # Status normalisation (via TestLogEntry.normalize_status validator)
 # ---------------------------------------------------------------------------
 
+
 class TestStatusNormalisation:
-    @pytest.mark.parametrize("raw,expected", [
-        ("passed",  "PASS"),
-        ("PASSED",  "PASS"),
-        ("SUCCESS", "PASS"),
-        ("ok",      "PASS"),
-        ("OK",      "PASS"),
-        ("failed",  "FAIL"),
-        ("FAILED",  "FAIL"),
-        ("FAILURE", "FAIL"),
-        ("ERROR",   "FAIL"),
-        ("SKIP",    "SKIP"),
-        ("SKIPPED", "SKIP"),
-        ("IGNORED", "SKIP"),
-        ("PASS",    "PASS"),
-        ("FAIL",    "FAIL"),
-    ])
+    @pytest.mark.parametrize(
+        "raw,expected",
+        [
+            ("passed", "PASS"),
+            ("PASSED", "PASS"),
+            ("SUCCESS", "PASS"),
+            ("ok", "PASS"),
+            ("OK", "PASS"),
+            ("failed", "FAIL"),
+            ("FAILED", "FAIL"),
+            ("FAILURE", "FAIL"),
+            ("ERROR", "FAIL"),
+            ("SKIP", "SKIP"),
+            ("SKIPPED", "SKIP"),
+            ("IGNORED", "SKIP"),
+            ("PASS", "PASS"),
+            ("FAIL", "FAIL"),
+        ],
+    )
     def test_should_normalize_status_correctly(self, raw, expected):
         entry = TestLogEntry(test="t", status=raw)
         assert entry.status == expected
@@ -134,6 +142,7 @@ class TestStatusNormalisation:
 # ---------------------------------------------------------------------------
 # SKIP exclusion from denominator
 # ---------------------------------------------------------------------------
+
 
 class TestSkipExclusion:
     def test_should_exclude_skip_from_total_runs_denominator(self):
@@ -160,10 +169,9 @@ class TestSkipExclusion:
 # Batch boundary: Claude call count
 # ---------------------------------------------------------------------------
 
+
 class TestBatchBoundary:
-    def test_should_make_one_claude_call_for_10_flaky_tests(
-        self, analyzer, mem_settings, mocker
-    ):
+    def test_should_make_one_claude_call_for_10_flaky_tests(self, analyzer, mem_settings, mocker):
         # Arrange: 10 distinct tests all with 100% fail rate (exceeds threshold)
         logs = _make_logs_for_n_tests(10)
         response_json = _make_ai_response([f"test_{i:03d}" for i in range(10)])
@@ -175,16 +183,14 @@ class TestBatchBoundary:
         # Assert: exactly 1 call
         assert analyzer._client.complete.call_count == 1
 
-    def test_should_make_two_claude_calls_for_11_flaky_tests(
-        self, analyzer, mem_settings
-    ):
+    def test_should_make_two_claude_calls_for_11_flaky_tests(self, analyzer, mem_settings):
         # Arrange: 11 distinct tests, all flaky
         logs = _make_logs_for_n_tests(11)
         response_json_10 = _make_ai_response([f"test_{i:03d}" for i in range(10)])
-        response_json_1  = _make_ai_response(["test_010"])
+        response_json_1 = _make_ai_response(["test_010"])
         analyzer._client.complete.side_effect = [
             (response_json_10, 100),
-            (response_json_1,  20),
+            (response_json_1, 20),
         ]
 
         request = FlakyAnalysisRequest(logs=logs, source_file=None)
@@ -197,6 +203,7 @@ class TestBatchBoundary:
 # ---------------------------------------------------------------------------
 # _parse_suggestions_json
 # ---------------------------------------------------------------------------
+
 
 class TestParseSuggestionsJson:
     def test_should_parse_valid_json_array(self):
@@ -253,10 +260,9 @@ class TestParseSuggestionsJson:
 # DB persistence — FlakyTestRun + FlakyTestResult in one transaction
 # ---------------------------------------------------------------------------
 
+
 class TestPersistence:
-    def test_should_persist_flaky_run_and_results_together(
-        self, analyzer, mem_settings
-    ):
+    def test_should_persist_flaky_run_and_results_together(self, analyzer, mem_settings):
         from common.database import get_session
         from common.models import FlakyTestResult, FlakyTestRun
 
@@ -280,9 +286,7 @@ class TestPersistence:
             assert len(results) == 1
             assert results[0].test_name == "flaky_test"
 
-    def test_should_leave_no_orphan_rows_on_db_error(
-        self, analyzer, mem_settings, mocker
-    ):
+    def test_should_leave_no_orphan_rows_on_db_error(self, analyzer, mem_settings, mocker):
         from common.database import get_session
         from common.models import FlakyTestRun
 
@@ -292,13 +296,16 @@ class TestPersistence:
 
         original_save = None
         import repository as repo_mod
-        with mocker.patch.object(
-            repo_mod,
-            "save_flaky_run",
-            side_effect=Exception("disk full"),
+
+        with (
+            mocker.patch.object(
+                repo_mod,
+                "save_flaky_run",
+                side_effect=Exception("disk full"),
+            ),
+            pytest.raises(Exception),
         ):
-            with pytest.raises(Exception):
-                analyzer.analyze(FlakyAnalysisRequest(logs=logs))
+            analyzer.analyze(FlakyAnalysisRequest(logs=logs))
 
         # Assert: no FlakyTestRun rows were committed
         with get_session(mem_settings.db_path) as session:

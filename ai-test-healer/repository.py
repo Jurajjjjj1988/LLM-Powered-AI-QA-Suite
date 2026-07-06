@@ -6,6 +6,7 @@ Responsibilities:
   and increment applied_count (zero API calls on hit)
 - Persist new HealedSelector rows via SQLAlchemy ORM (no raw SQL)
 """
+
 from __future__ import annotations
 
 import logging
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Cache / read operations
 # ---------------------------------------------------------------------------
+
 
 def find_cached_selector(
     session: Session,
@@ -73,6 +75,7 @@ def increment_applied_count(session: Session, record: HealedSelector) -> None:
 # ---------------------------------------------------------------------------
 # Write operations
 # ---------------------------------------------------------------------------
+
 
 def save_healed_selector(
     session: Session,
