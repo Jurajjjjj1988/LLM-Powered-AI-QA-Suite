@@ -29,8 +29,7 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from analyze_flaky import FlakyAnalyzer, _aggregate_stats, _parse_suggestions_json
-
+from ai_test_analyzer.analyze_flaky import FlakyAnalyzer, _aggregate_stats, _parse_suggestions_json
 from common.schemas import FlakyAnalysisRequest, TestLogEntry
 
 # ---------------------------------------------------------------------------
@@ -295,7 +294,7 @@ class TestPersistence:
         analyzer._client.complete.return_value = (_make_ai_response(["t"]), 50)
 
         original_save = None
-        import repository as repo_mod
+        import ai_test_analyzer.repository as repo_mod
 
         with (
             mocker.patch.object(

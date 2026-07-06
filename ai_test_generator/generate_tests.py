@@ -17,14 +17,13 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from prompts import SYSTEM_PROMPT, build_user_message
-from repository import (
+from ai_test_generator.prompts import SYSTEM_PROMPT, build_user_message
+from ai_test_generator.repository import (
     find_cached_test,
     save_generated_test,
     write_code_to_file,
 )
-from validator import validate_generated_code
-
+from ai_test_generator.validator import validate_generated_code
 from common.claude_client import ClaudeClient
 from common.config import Settings, get_settings
 from common.database import get_session, init_db

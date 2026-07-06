@@ -14,8 +14,8 @@ import sys
 from pathlib import Path
 
 import click
-from healer import SelfHealingEngine
 
+from ai_test_healer.healer import SelfHealingEngine
 from common.config import get_settings
 from common.exceptions import ClaudeAPIError, SanitizationError
 from common.logging_config import configure_logging

@@ -31,8 +31,7 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from healer import SelfHealingEngine, _extract_selector
-
+from ai_test_healer.healer import SelfHealingEngine, _extract_selector
 from common.schemas import HealSelectorRequest
 
 # ---------------------------------------------------------------------------

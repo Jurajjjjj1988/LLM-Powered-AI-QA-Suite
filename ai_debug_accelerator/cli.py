@@ -45,7 +45,7 @@ def cli() -> None:
 def analyze_cmd(report_file: str, output_dir: str | None, open_report: bool) -> None:
     """Analyzuj Playwright report a vygeneruj ai_debug_report.md."""
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from debugger import analyze
+    from ai_debug_accelerator.debugger import analyze
 
     click.echo(f"\nAnalyzujem: {report_file}")
     click.echo("Spúšťam SDET + Code Review agentov...\n")

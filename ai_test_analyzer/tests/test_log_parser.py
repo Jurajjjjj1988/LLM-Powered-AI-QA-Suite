@@ -32,7 +32,7 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from log_parser import parse_log_entries, parse_log_file
+from ai_test_analyzer.log_parser import parse_log_entries, parse_log_file
 
 # ---------------------------------------------------------------------------
 # JUnit XML helpers

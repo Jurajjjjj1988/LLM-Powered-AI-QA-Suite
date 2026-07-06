@@ -38,7 +38,7 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from validator import validate_generated_code
+from ai_test_generator.validator import validate_generated_code
 
 # ---------------------------------------------------------------------------
 # Helpers

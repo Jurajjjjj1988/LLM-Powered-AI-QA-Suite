@@ -29,7 +29,7 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from selector_validator import SelectorValidationResult, validate_css_selector
+from ai_test_healer.selector_validator import SelectorValidationResult, validate_css_selector
 
 # ---------------------------------------------------------------------------
 # Valid selectors

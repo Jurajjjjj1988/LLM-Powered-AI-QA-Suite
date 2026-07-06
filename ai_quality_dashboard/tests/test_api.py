@@ -131,7 +131,7 @@ def client(mem_engine, mem_settings):
         # Import app AFTER patching so module-level code runs with mocks
         import importlib
 
-        import app as app_module
+        import ai_quality_dashboard.app as app_module
 
         importlib.reload(app_module)
 
@@ -372,7 +372,7 @@ class TestDbUnreachable:
         ):
             import importlib
 
-            import app as app_module
+            import ai_quality_dashboard.app as app_module
 
             importlib.reload(app_module)
 

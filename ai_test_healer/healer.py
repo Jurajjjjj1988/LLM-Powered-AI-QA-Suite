@@ -22,14 +22,13 @@ from __future__ import annotations
 
 import logging
 
-from prompts import SYSTEM_PROMPT, build_heal_user_message
-from repository import (
+from ai_test_healer.prompts import SYSTEM_PROMPT, build_heal_user_message
+from ai_test_healer.repository import (
     find_cached_selector,
     increment_applied_count,
     save_healed_selector,
 )
-from selector_validator import validate_css_selector
-
+from ai_test_healer.selector_validator import validate_css_selector
 from common.claude_client import ClaudeClient
 from common.config import Settings, get_settings
 from common.database import get_session, init_db

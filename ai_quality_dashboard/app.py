@@ -26,14 +26,14 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from repository import (
+
+from ai_quality_dashboard.repository import (
     get_flaky_runs,
     get_flaky_trend,
     get_generated_tests,
     get_healed_selectors,
     get_summary,
 )
-
 from common.config import get_settings
 from common.database import get_readonly_session, init_db
 from common.exceptions import DatabaseError

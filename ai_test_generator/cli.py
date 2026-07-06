@@ -13,8 +13,8 @@ import logging
 import sys
 
 import click
-from generate_tests import TestGenerator
 
+from ai_test_generator.generate_tests import TestGenerator
 from common.config import get_settings
 from common.exceptions import ClaudeAPIError, SanitizationError
 from common.logging_config import configure_logging

@@ -16,9 +16,9 @@ import logging
 import sys
 
 import click
-from analyze_flaky import FlakyAnalyzer
-from log_parser import parse_log_entries, parse_log_file
 
+from ai_test_analyzer.analyze_flaky import FlakyAnalyzer
+from ai_test_analyzer.log_parser import parse_log_entries, parse_log_file
 from common.config import get_settings
 from common.exceptions import ClaudeAPIError
 from common.logging_config import configure_logging

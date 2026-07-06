@@ -14,10 +14,10 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from prompts import SYSTEM_PROMPT, build_batch_user_message
 from pydantic import BaseModel
-from repository import save_flaky_run
 
+from ai_test_analyzer.prompts import SYSTEM_PROMPT, build_batch_user_message
+from ai_test_analyzer.repository import save_flaky_run
 from common.claude_client import ClaudeClient
 from common.config import Settings, get_settings
 from common.database import get_session, init_db

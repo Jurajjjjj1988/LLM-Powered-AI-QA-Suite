@@ -29,22 +29,24 @@ dev = [
     "httpx>=0.27",
 ]
 
+[project.scripts]
+ai-test-generator = "ai_test_generator.cli:cli"
+ai-test-analyzer = "ai_test_analyzer.cli:cli"
+ai-test-healer = "ai_test_healer.cli:cli"
+ai-quality-dashboard = "ai_quality_dashboard.cli:cli"
+ai-debug-accelerator = "ai_debug_accelerator.cli:cli"
+ai-mock-architect = "ai_mock_architect.cli:cli"
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["common*"]
+include = ["common*", "ai_test_generator*", "ai_test_analyzer*", "ai_test_healer*", "ai_quality_dashboard*", "ai_debug_accelerator*", "ai_mock_architect*"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
 testpaths = [
-    "ai-test-generator/tests",
-    "ai-test-analyzer/tests",
-    "ai-test-healer/tests",
-    "ai-quality-dashboard/tests",
+    "ai_test_generator/tests",
+    "ai_test_analyzer/tests",
+    "ai_test_healer/tests",
+    "ai_quality_dashboard/tests",
 ]
-pythonpath = [
-    ".",
-    "ai-test-generator",
-    "ai-test-analyzer",
-    "ai-test-healer",
-    "ai-quality-dashboard",
-]
+pythonpath = ["."]

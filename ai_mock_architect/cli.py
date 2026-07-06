@@ -51,7 +51,7 @@ def generate_cmd(spec_source: str, output_dir: str, open_dir: bool) -> None:
     SPEC_SOURCE môže byť lokálny súbor (swagger.json) alebo URL.
     """
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from mock_architect import generate
+    from ai_mock_architect.mock_architect import generate
 
     is_url = spec_source.startswith("http://") or spec_source.startswith("https://")
     source_type = "URL" if is_url else "súbor"

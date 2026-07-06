@@ -86,10 +86,9 @@ def mock_claude(mocker):
 @pytest.fixture()
 def generator(mem_settings, mock_claude):
     """Construct a TestGenerator with mocked Claude and in-memory DB."""
-    from generate_tests import TestGenerator
-
     # Reset the module-level DB engine singleton so each test gets fresh state
     import common.database as _db
+    from ai_test_generator.generate_tests import TestGenerator
 
     _db._engine = None
     _db._SessionLocal = None
@@ -119,7 +118,7 @@ class TestStripCodeFences:
     """Unit tests for the module-level _strip_code_fences helper."""
 
     def _strip(self, text):
-        from generate_tests import _strip_code_fences
+        from ai_test_generator.generate_tests import _strip_code_fences
 
         return _strip_code_fences(text)
 
@@ -293,7 +292,7 @@ class TestSystemPromptSafety:
     """User-supplied requirement text MUST NOT appear in SYSTEM_PROMPT."""
 
     def test_should_not_contain_user_content_in_system_prompt(self):
-        from prompts import SYSTEM_PROMPT
+        from ai_test_generator.prompts import SYSTEM_PROMPT
 
         # Sample user-supplied text that might be injected
         user_texts = [
