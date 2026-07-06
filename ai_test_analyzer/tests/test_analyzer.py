@@ -15,7 +15,6 @@ All DB access uses SQLite :memory:. ClaudeClient is always mocked.
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -29,7 +28,12 @@ for p in (str(TOOL_ROOT), str(REPO_ROOT)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from ai_test_analyzer.analyze_flaky import FlakyAnalyzer, _aggregate_stats, _parse_suggestions_json
+from ai_test_analyzer.analyze_flaky import (
+    FlakyAnalyzer,
+    _aggregate_stats,
+    _BatchSuggestions,
+    _TestSuggestion,
+)
 from common.schemas import FlakyAnalysisRequest, TestLogEntry
 
 # ---------------------------------------------------------------------------
@@ -61,10 +65,13 @@ def mem_settings():
     return settings
 
 
-def _make_ai_response(test_names: list[str]) -> str:
-    """Build a valid Claude JSON response for given test names."""
-    return json.dumps(
-        [{"test_name": n, "root_cause": "timing", "fixes": ["add wait"]} for n in test_names]
+def _make_ai_response(test_names: list[str]) -> _BatchSuggestions:
+    """Build a structured Claude response (_BatchSuggestions) for given test names."""
+    return _BatchSuggestions(
+        suggestions=[
+            _TestSuggestion(test_name=n, root_cause="timing", fixes=["add wait"])
+            for n in test_names
+        ]
     )
 
 
@@ -76,10 +83,10 @@ def analyzer(mem_settings, mocker):
     _db._engine = None
     _db._SessionLocal = None
 
-    mock_client = mocker.patch("analyze_flaky.ClaudeClient", autospec=True)
-    mock_client.return_value.complete.return_value = (_make_ai_response([]), 50)
+    mock_client = mocker.patch("ai_test_analyzer.analyze_flaky.ClaudeClient", autospec=True)
+    mock_client.return_value.complete_structured.return_value = (_make_ai_response([]), 50)
 
-    with patch("analyze_flaky.get_settings", return_value=mem_settings):
+    with patch("ai_test_analyzer.analyze_flaky.get_settings", return_value=mem_settings):
         inst = FlakyAnalyzer(settings=mem_settings)
     # Expose mock for tests that need to configure it
     inst._mock_client_class = mock_client
@@ -174,20 +181,20 @@ class TestBatchBoundary:
         # Arrange: 10 distinct tests all with 100% fail rate (exceeds threshold)
         logs = _make_logs_for_n_tests(10)
         response_json = _make_ai_response([f"test_{i:03d}" for i in range(10)])
-        analyzer._client.complete.return_value = (response_json, 100)
+        analyzer._client.complete_structured.return_value = (response_json, 100)
 
         request = FlakyAnalysisRequest(logs=logs, source_file=None)
         # Act
         analyzer.analyze(request)
         # Assert: exactly 1 call
-        assert analyzer._client.complete.call_count == 1
+        assert analyzer._client.complete_structured.call_count == 1
 
     def test_should_make_two_claude_calls_for_11_flaky_tests(self, analyzer, mem_settings):
         # Arrange: 11 distinct tests, all flaky
         logs = _make_logs_for_n_tests(11)
         response_json_10 = _make_ai_response([f"test_{i:03d}" for i in range(10)])
         response_json_1 = _make_ai_response(["test_010"])
-        analyzer._client.complete.side_effect = [
+        analyzer._client.complete_structured.side_effect = [
             (response_json_10, 100),
             (response_json_1, 20),
         ]
@@ -196,68 +203,7 @@ class TestBatchBoundary:
         # Act
         analyzer.analyze(request)
         # Assert: exactly 2 calls
-        assert analyzer._client.complete.call_count == 2
-
-
-# ---------------------------------------------------------------------------
-# _parse_suggestions_json
-# ---------------------------------------------------------------------------
-
-
-class TestParseSuggestionsJson:
-    def test_should_parse_valid_json_array(self):
-        raw = json.dumps([{"test_name": "t1", "root_cause": "timing", "fixes": []}])
-        result = _parse_suggestions_json(raw, expected_count=1)
-        assert len(result) == 1
-        assert result[0]["test_name"] == "t1"
-
-    def test_should_parse_json_wrapped_in_json_fences(self):
-        inner = json.dumps([{"test_name": "t1", "root_cause": "x", "fixes": []}])
-        raw = f"```json\n{inner}\n```"
-        result = _parse_suggestions_json(raw, expected_count=1)
-        assert len(result) == 1
-
-    def test_should_parse_json_wrapped_in_bare_fences(self):
-        inner = json.dumps([{"test_name": "t1", "root_cause": "x", "fixes": []}])
-        raw = f"```\n{inner}\n```"
-        result = _parse_suggestions_json(raw, expected_count=1)
-        assert len(result) == 1
-
-    def test_should_return_empty_list_on_garbage_input(self):
-        result = _parse_suggestions_json("this is not json at all!!!", expected_count=2)
-        assert result == []
-
-    def test_should_return_empty_list_when_input_is_empty_string(self):
-        result = _parse_suggestions_json("", expected_count=1)
-        assert result == []
-
-    def test_should_pad_result_to_expected_count_when_short(self):
-        raw = json.dumps([{"test_name": "t1", "root_cause": "x", "fixes": []}])
-        result = _parse_suggestions_json(raw, expected_count=3)
-        assert len(result) == 3
-        assert result[1] == {}  # padded empty dict
-        assert result[2] == {}
-
-    def test_should_truncate_result_to_expected_count_when_long(self):
-        raw = json.dumps([{"test_name": f"t{i}"} for i in range(5)])
-        result = _parse_suggestions_json(raw, expected_count=2)
-        assert len(result) == 2
-
-    def test_should_return_empty_list_when_json_is_object_not_array(self):
-        raw = json.dumps({"test_name": "t1"})
-        result = _parse_suggestions_json(raw, expected_count=1)
-        assert result == []
-
-    def test_should_extract_array_embedded_in_prose(self):
-        inner = json.dumps([{"test_name": "t1", "root_cause": "x", "fixes": []}])
-        raw = f"Here is my analysis:\n{inner}\nThat's all."
-        result = _parse_suggestions_json(raw, expected_count=1)
-        assert len(result) == 1
-
-
-# ---------------------------------------------------------------------------
-# DB persistence — FlakyTestRun + FlakyTestResult in one transaction
-# ---------------------------------------------------------------------------
+        assert analyzer._client.complete_structured.call_count == 2
 
 
 class TestPersistence:
@@ -268,7 +214,7 @@ class TestPersistence:
         # Arrange: 1 flaky test
         logs = [_entry("flaky_test", "FAIL"), _entry("flaky_test", "PASS")]
         response_json = _make_ai_response(["flaky_test"])
-        analyzer._client.complete.return_value = (response_json, 50)
+        analyzer._client.complete_structured.return_value = (response_json, 50)
         request = FlakyAnalysisRequest(logs=logs, source_file="ci.log")
 
         # Act
@@ -291,15 +237,11 @@ class TestPersistence:
 
         # Arrange: make get_session raise to simulate DB error
         logs = [_entry("t", "FAIL"), _entry("t", "PASS")]
-        analyzer._client.complete.return_value = (_make_ai_response(["t"]), 50)
-
-        original_save = None
-        import ai_test_analyzer.repository as repo_mod
+        analyzer._client.complete_structured.return_value = (_make_ai_response(["t"]), 50)
 
         with (
-            mocker.patch.object(
-                repo_mod,
-                "save_flaky_run",
+            mocker.patch(
+                "ai_test_analyzer.analyze_flaky.save_flaky_run",
                 side_effect=Exception("disk full"),
             ),
             pytest.raises(Exception),

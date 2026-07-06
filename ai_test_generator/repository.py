@@ -109,7 +109,8 @@ def write_code_to_file(code: str, output_path: Path) -> None:
     Raises OSError on I/O failures (let callers handle/log).
     """
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(code, encoding="utf-8")
+    # POSIX: generated files end with exactly one trailing newline.
+    output_path.write_text(code.rstrip("\n") + "\n", encoding="utf-8")
     logger.info(
         "Generated test written to file",
         extra={"output_path": str(output_path), "bytes": len(code.encode())},

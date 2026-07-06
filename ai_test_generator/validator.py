@@ -81,7 +81,7 @@ def _validate_selenium(code: str) -> ValidationResult:
     if "import pytest" not in code:
         reasons.append("Missing `import pytest`")
 
-    if "webdriver" not in code:
+    if not re.search(r"\bwebdriver\b", code):
         reasons.append("Missing selenium webdriver import or usage")
 
     test_fns = len(re.findall(r"def test_", code))

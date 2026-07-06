@@ -76,7 +76,7 @@ def mock_claude(mocker):
         "});\n"
     )
     mock = mocker.patch(
-        "generate_tests.ClaudeClient",
+        "ai_test_generator.generate_tests.ClaudeClient",
         autospec=True,
     )
     mock.return_value.complete.return_value = (valid_code, 120)
@@ -93,7 +93,7 @@ def generator(mem_settings, mock_claude):
     _db._engine = None
     _db._SessionLocal = None
 
-    with patch("generate_tests.get_settings", return_value=mem_settings):
+    with patch("ai_test_generator.generate_tests.get_settings", return_value=mem_settings):
         gen = TestGenerator(settings=mem_settings)
     return gen
 

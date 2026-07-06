@@ -71,10 +71,10 @@ def engine(mem_settings, mocker):
     _db._engine = None
     _db._SessionLocal = None
 
-    mock_claude = mocker.patch("healer.ClaudeClient", autospec=True)
+    mock_claude = mocker.patch("ai_test_healer.healer.ClaudeClient", autospec=True)
     mock_claude.return_value.complete.return_value = ("button.submit", 20)
 
-    with patch("healer.get_settings", return_value=mem_settings):
+    with patch("ai_test_healer.healer.get_settings", return_value=mem_settings):
         inst = SelfHealingEngine(settings=mem_settings)
     inst._mock_claude = mock_claude
     return inst
