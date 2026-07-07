@@ -83,6 +83,24 @@ def build_selenium_user_message(requirement: str) -> str:
     )
 
 
+def build_repair_message(framework: str, current_code: str, failure_output: str) -> str:
+    """Build the repair user-message for the closed loop (generate -> run -> repair).
+
+    Feeds the failing code + the real run output back to the model so it can fix
+    the specific failure, keeping the same conventions as the original generation.
+    """
+    return (
+        f"The following {framework} test FAILED when it was run. Fix it so it passes.\n\n"
+        "Current test code:\n"
+        f"{current_code}\n\n"
+        "Failure output from the test run:\n"
+        f"{failure_output}\n\n"
+        "Return ONLY the corrected TypeScript source code, keeping the same conventions "
+        "(page object, stable selectors, web-first assertions, no hard waits). "
+        "No markdown, no explanations."
+    )
+
+
 # Dispatch table so generate_tests.py can call build_user_message(framework, req)
 _FRAMEWORK_BUILDERS = {
     "playwright": build_playwright_user_message,

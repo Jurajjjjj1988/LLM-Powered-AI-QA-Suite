@@ -15,9 +15,10 @@ Orchestration flow:
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
-from ai_test_generator.prompts import SYSTEM_PROMPT, build_user_message
+from ai_test_generator.prompts import SYSTEM_PROMPT, build_repair_message, build_user_message
 from ai_test_generator.repository import (
     find_cached_test,
     save_generated_test,
@@ -30,8 +31,19 @@ from common.database import get_session, init_db
 from common.exceptions import ClaudeAPIError
 from common.sanitizer import hash_text, sanitize_requirement
 from common.schemas import GenerateTestsRequest, GenerateTestsResponse
+from common.test_runner import run_playwright_test
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class VerifiedGeneration:
+    """Result of the closed loop: the generation + whether it actually ran green."""
+
+    response: GenerateTestsResponse
+    execution_passed: bool | None  # None = not run (no base_url given → open-loop)
+    repair_attempts: int
+    run_output: str
 
 
 class TestGenerator:
@@ -158,6 +170,60 @@ class TestGenerator:
             validation_passed=validation_result.passed,
             output_file_path=output_file_str,
             from_cache=False,
+        )
+
+    def generate_and_verify(
+        self,
+        request: GenerateTestsRequest,
+        base_url: str | None = None,
+        max_repairs: int = 2,
+    ) -> VerifiedGeneration:
+        """Closed loop: generate → RUN the test against *base_url* → repair until green.
+
+        The suite's one closed-loop path. Without a base_url (or when no output_file
+        is written), it stays open-loop and returns execution_passed=None. With one,
+        it runs the spec, and on a red run feeds the failure back to the model to
+        repair, up to *max_repairs* times, accepting only a genuinely green run.
+        """
+        response = self.generate(request)
+        if base_url is None or response.output_file_path is None:
+            return VerifiedGeneration(
+                response=response, execution_passed=None, repair_attempts=0, run_output=""
+            )
+
+        spec_path = Path(response.output_file_path)
+        current_code = response.generated_code
+        run_output = ""
+        for attempt in range(max_repairs + 1):
+            result = run_playwright_test(spec_path, base_url)
+            run_output = result.output
+            if result.passed:
+                return VerifiedGeneration(
+                    response=response,
+                    execution_passed=True,
+                    repair_attempts=attempt,
+                    run_output=run_output,
+                )
+            if attempt == max_repairs:
+                break
+            repair_message = build_repair_message(request.framework, current_code, result.output)
+            try:
+                repaired, _ = self._client.complete(
+                    system_prompt=SYSTEM_PROMPT,
+                    user_message=repair_message,
+                    max_tokens=self._settings.claude_max_tokens,
+                )
+            except ClaudeAPIError:
+                logger.exception("Claude repair call failed")
+                break
+            current_code = _strip_code_fences(repaired)
+            write_code_to_file(current_code, spec_path)
+
+        return VerifiedGeneration(
+            response=response,
+            execution_passed=False,
+            repair_attempts=max_repairs,
+            run_output=run_output,
         )
 
 
