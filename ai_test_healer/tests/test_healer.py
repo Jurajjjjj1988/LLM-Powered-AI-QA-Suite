@@ -97,7 +97,9 @@ def _request(
 
 
 class TestCacheKey:
-    def test_should_cache_miss_when_html_differs_with_same_selector(self, engine, mem_settings):
+    def test_should_cache_miss_when_html_differs_with_same_selector(
+        self, engine, mem_settings
+    ) -> None:
         """Same selector + different HTML → two Claude calls (no cache hit)."""
         # Arrange
         html_a = "<html><body><button class='submit'>OK</button></body></html>"
@@ -111,7 +113,7 @@ class TestCacheKey:
         # Assert: 2 Claude calls because HTML hashes differ
         assert engine._client.complete.call_count == 2
 
-    def test_should_cache_hit_when_same_selector_and_html(self, engine, mem_settings):
+    def test_should_cache_hit_when_same_selector_and_html(self, engine, mem_settings) -> None:
         """Same selector + same HTML → second call returns from_cache=True."""
         engine._client.complete.return_value = ("button.submit", 20)
         req = _request()
@@ -122,7 +124,7 @@ class TestCacheKey:
         assert first.from_cache is False
         assert second.from_cache is True
 
-    def test_should_increment_applied_count_by_one_on_cache_hit(self, engine, mem_settings):
+    def test_should_increment_applied_count_by_one_on_cache_hit(self, engine, mem_settings) -> None:
         from common.database import get_session
         from common.models import HealedSelector
 
@@ -138,7 +140,7 @@ class TestCacheKey:
         # Cache hit: applied_count incremented to 2
         assert record.applied_count == 2
 
-    def test_should_bypass_cache_when_force_heal_true(self, engine, mem_settings):
+    def test_should_bypass_cache_when_force_heal_true(self, engine, mem_settings) -> None:
         """force_heal=True must not read or write the cache, always calling Claude."""
         engine._client.complete.return_value = ("button.submit", 20)
         req = _request(force_heal=True)
@@ -161,7 +163,7 @@ class TestCacheKey:
 class TestNoneResponse:
     def test_should_persist_with_validation_passed_false_when_claude_returns_none(
         self, engine, mem_settings
-    ):
+    ) -> None:
         from common.database import get_session
         from common.models import HealedSelector
 
@@ -178,7 +180,9 @@ class TestNoneResponse:
         assert record.new_selector == "NONE"
         assert record.validation_passed is False
 
-    def test_should_persist_when_claude_returns_none_in_backticks(self, engine, mem_settings):
+    def test_should_persist_when_claude_returns_none_in_backticks(
+        self, engine, mem_settings
+    ) -> None:
         """Edge: model wraps NONE in backticks — _extract_selector strips them."""
         engine._client.complete.return_value = ("`NONE`", 10)
         response = engine.heal(_request())
@@ -194,7 +198,7 @@ class TestNoneResponse:
 class TestInvalidCssPersistence:
     def test_should_persist_with_validation_passed_false_for_xpath_selector(
         self, engine, mem_settings
-    ):
+    ) -> None:
         from common.database import get_session
         from common.models import HealedSelector
 
@@ -209,7 +213,7 @@ class TestInvalidCssPersistence:
             record = session.query(HealedSelector).first()
         assert record.validation_passed is False
 
-    def test_should_not_raise_when_selector_is_invalid_css(self, engine):
+    def test_should_not_raise_when_selector_is_invalid_css(self, engine) -> None:
         """No exception must be raised even if the CSS is invalid."""
         engine._client.complete.return_value = ("???invalid###", 10)
         # Should not raise
@@ -224,28 +228,28 @@ class TestInvalidCssPersistence:
 
 
 class TestExtractSelector:
-    def test_should_strip_backtick_wrapping(self):
+    def test_should_strip_backtick_wrapping(self) -> None:
         assert _extract_selector("`button.submit`") == "button.submit"
 
-    def test_should_strip_double_quote_wrapping(self):
+    def test_should_strip_double_quote_wrapping(self) -> None:
         assert _extract_selector('"button.submit"') == "button.submit"
 
-    def test_should_strip_single_quote_wrapping(self):
+    def test_should_strip_single_quote_wrapping(self) -> None:
         assert _extract_selector("'button.submit'") == "button.submit"
 
-    def test_should_take_first_non_empty_line_when_multiple_lines(self):
+    def test_should_take_first_non_empty_line_when_multiple_lines(self) -> None:
         raw = "\n\nbutton.submit\n.other-line"
         result = _extract_selector(raw)
         assert result == "button.submit"
 
-    def test_should_return_none_when_all_lines_empty(self):
+    def test_should_return_none_when_all_lines_empty(self) -> None:
         result = _extract_selector("   \n  \n  ")
         assert result == "NONE"
 
-    def test_should_strip_surrounding_whitespace(self):
+    def test_should_strip_surrounding_whitespace(self) -> None:
         assert _extract_selector("  button.submit  ") == "button.submit"
 
-    def test_should_handle_bare_selector_with_no_wrapping(self):
+    def test_should_handle_bare_selector_with_no_wrapping(self) -> None:
         assert _extract_selector("div > span.highlight") == "div > span.highlight"
 
 
@@ -255,7 +259,7 @@ class TestExtractSelector:
 
 
 class TestClaudeAPIErrorPropagation:
-    def test_should_propagate_claude_api_error_from_heal(self, engine):
+    def test_should_propagate_claude_api_error_from_heal(self, engine) -> None:
         from common.exceptions import ClaudeAPIError
 
         engine._client.complete.side_effect = ClaudeAPIError("timeout")

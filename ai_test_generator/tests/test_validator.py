@@ -76,12 +76,12 @@ VALID_SELENIUM = (
 
 
 class TestPlaywrightValidator:
-    def test_should_pass_when_code_is_valid_playwright(self):
+    def test_should_pass_when_code_is_valid_playwright(self) -> None:
         result = validate_generated_code(VALID_PLAYWRIGHT, "playwright")
         assert result.passed is True
         assert result.reasons == []
 
-    def test_should_fail_when_import_statement_is_missing(self):
+    def test_should_fail_when_import_statement_is_missing(self) -> None:
         # Arrange: remove the import line
         code = VALID_PLAYWRIGHT.replace("import { test, expect } from '@playwright/test';\n", "")
         # Act
@@ -90,14 +90,14 @@ class TestPlaywrightValidator:
         assert result.passed is False
         assert any("import" in r.lower() for r in result.reasons)
 
-    def test_should_fail_when_no_test_calls_exist(self):
+    def test_should_fail_when_no_test_calls_exist(self) -> None:
         # Arrange: replace test( with xtest( so it won't match
         code = "import { test, expect } from '@playwright/test';\nxtest('x', () => {});"
         result = validate_generated_code(code, "playwright")
         assert result.passed is False
         assert any("test(" in r for r in result.reasons)
 
-    def test_should_fail_when_no_expect_assertion_present(self):
+    def test_should_fail_when_no_expect_assertion_present(self) -> None:
         code = (
             "import { test, expect } from '@playwright/test';\n"
             "test('no assertion', async () => { await page.goto('/'); });\n"
@@ -106,13 +106,13 @@ class TestPlaywrightValidator:
         assert result.passed is False
         assert any("expect" in r for r in result.reasons)
 
-    def test_should_pass_with_spaced_import_variant(self):
+    def test_should_pass_with_spaced_import_variant(self) -> None:
         # Alternate style: import {test, expect}
         code = VALID_PLAYWRIGHT.replace("import { test, expect }", "import {test, expect}")
         result = validate_generated_code(code, "playwright")
         assert result.passed is True
 
-    def test_should_be_case_insensitive_for_framework_name(self):
+    def test_should_be_case_insensitive_for_framework_name(self) -> None:
         result = validate_generated_code(VALID_PLAYWRIGHT, "PLAYWRIGHT")
         assert result.passed is True
 
@@ -123,23 +123,23 @@ class TestPlaywrightValidator:
 
 
 class TestCypressValidator:
-    def test_should_pass_when_code_is_valid_cypress(self):
+    def test_should_pass_when_code_is_valid_cypress(self) -> None:
         result = validate_generated_code(VALID_CYPRESS, "cypress")
         assert result.passed is True
 
-    def test_should_fail_when_describe_block_missing(self):
+    def test_should_fail_when_describe_block_missing(self) -> None:
         code = VALID_CYPRESS.replace("describe(", "xdescribe(")
         result = validate_generated_code(code, "cypress")
         assert result.passed is False
         assert any("describe" in r for r in result.reasons)
 
-    def test_should_fail_when_it_block_missing(self):
+    def test_should_fail_when_it_block_missing(self) -> None:
         code = VALID_CYPRESS.replace("  it(", "  xit(")
         result = validate_generated_code(code, "cypress")
         assert result.passed is False
         assert any("it(" in r for r in result.reasons)
 
-    def test_should_fail_when_cy_commands_missing(self):
+    def test_should_fail_when_cy_commands_missing(self) -> None:
         code = VALID_CYPRESS.replace("cy.", "XX.")
         result = validate_generated_code(code, "cypress")
         assert result.passed is False
@@ -152,23 +152,23 @@ class TestCypressValidator:
 
 
 class TestSeleniumValidator:
-    def test_should_pass_when_code_is_valid_selenium(self):
+    def test_should_pass_when_code_is_valid_selenium(self) -> None:
         result = validate_generated_code(VALID_SELENIUM, "selenium")
         assert result.passed is True
 
-    def test_should_fail_when_import_pytest_missing(self):
+    def test_should_fail_when_import_pytest_missing(self) -> None:
         code = VALID_SELENIUM.replace("import pytest\n", "")
         result = validate_generated_code(code, "selenium")
         assert result.passed is False
         assert any("pytest" in r for r in result.reasons)
 
-    def test_should_fail_when_webdriver_reference_missing(self):
+    def test_should_fail_when_webdriver_reference_missing(self) -> None:
         code = VALID_SELENIUM.replace("webdriver", "xwebdriver")
         result = validate_generated_code(code, "selenium")
         assert result.passed is False
         assert any("webdriver" in r.lower() for r in result.reasons)
 
-    def test_should_fail_when_no_test_functions_defined(self):
+    def test_should_fail_when_no_test_functions_defined(self) -> None:
         code = VALID_SELENIUM.replace("def test_", "def helper_")
         result = validate_generated_code(code, "selenium")
         assert result.passed is False
@@ -181,25 +181,25 @@ class TestSeleniumValidator:
 
 
 class TestValidateGeneratedCodeEdgeCases:
-    def test_should_fail_when_code_is_empty_string(self):
+    def test_should_fail_when_code_is_empty_string(self) -> None:
         result = validate_generated_code("", "playwright")
         assert result.passed is False
         assert any("empty" in r.lower() for r in result.reasons)
 
-    def test_should_fail_when_code_is_only_whitespace(self):
+    def test_should_fail_when_code_is_only_whitespace(self) -> None:
         result = validate_generated_code("   \n\t  ", "playwright")
         assert result.passed is False
 
-    def test_should_pass_with_warning_for_unknown_framework(self):
+    def test_should_pass_with_warning_for_unknown_framework(self) -> None:
         result = validate_generated_code("some arbitrary code", "jest")
         assert result.passed is True
         assert result.reasons  # warning reason present
 
-    def test_should_bool_as_passed_attribute(self):
+    def test_should_bool_as_passed_attribute(self) -> None:
         result = validate_generated_code(VALID_PLAYWRIGHT, "playwright")
         assert bool(result) is True
 
-    def test_should_repr_include_pass_or_fail(self):
+    def test_should_repr_include_pass_or_fail(self) -> None:
         result = validate_generated_code(VALID_PLAYWRIGHT, "playwright")
         assert "PASS" in repr(result)
 
@@ -218,34 +218,34 @@ class TestSanitizeRequirement:
 
         return sanitize_requirement(text, **kw)
 
-    def test_should_raise_sanitization_error_when_text_under_10_chars(self):
+    def test_should_raise_sanitization_error_when_text_under_10_chars(self) -> None:
         from common.exceptions import SanitizationError
 
         with pytest.raises(SanitizationError, match="too short"):
             self._sanitize("short")
 
-    def test_should_raise_sanitization_error_when_text_is_empty_string(self):
+    def test_should_raise_sanitization_error_when_text_is_empty_string(self) -> None:
         from common.exceptions import SanitizationError
 
         with pytest.raises(SanitizationError):
             self._sanitize("")
 
-    def test_should_raise_sanitization_error_when_text_exceeds_5000_chars(self):
+    def test_should_raise_sanitization_error_when_text_exceeds_5000_chars(self) -> None:
         from common.exceptions import SanitizationError
 
         with pytest.raises(SanitizationError, match="exceeds"):
             self._sanitize("A" * 5001)
 
-    def test_should_accept_exactly_10_char_boundary(self):
+    def test_should_accept_exactly_10_char_boundary(self) -> None:
         result = self._sanitize("1234567890")
         assert result == "1234567890"
 
-    def test_should_accept_exactly_5000_char_boundary(self):
+    def test_should_accept_exactly_5000_char_boundary(self) -> None:
         long_text = "A" * 5000
         result = self._sanitize(long_text)
         assert len(result) == 5000
 
-    def test_should_strip_control_characters(self):
+    def test_should_strip_control_characters(self) -> None:
         # Arrange: embed a null byte and a BEL character
         text = "Test requirement\x00 with\x07 control chars"
         # Act
@@ -254,12 +254,12 @@ class TestSanitizeRequirement:
         assert "\x00" not in result
         assert "\x07" not in result
 
-    def test_should_strip_leading_trailing_whitespace(self):
+    def test_should_strip_leading_trailing_whitespace(self) -> None:
         result = self._sanitize("  valid requirement  ")
         assert not result.startswith(" ")
         assert not result.endswith(" ")
 
-    def test_should_raise_when_only_whitespace(self):
+    def test_should_raise_when_only_whitespace(self) -> None:
         from common.exceptions import SanitizationError
 
         with pytest.raises(SanitizationError):

@@ -126,7 +126,7 @@ def client(mem_engine):
 # ---------------------------------------------------------------------------
 
 
-def _seed_generated_test(session, framework="playwright", tokens=100, valid=True):
+def _seed_generated_test(session, framework: str = "playwright", tokens=100, valid: bool = True):
     row = GeneratedTest(
         requirement_hash="abc123",
         framework=framework,
@@ -142,7 +142,7 @@ def _seed_generated_test(session, framework="playwright", tokens=100, valid=True
     return row
 
 
-def _seed_flaky_run(session, total=10, flaky=3, days_ago=0, source="ci.log"):
+def _seed_flaky_run(session, total=10, flaky=3, days_ago=0, source: str = "ci.log"):
     analyzed_at = datetime.now(UTC) - timedelta(days=days_ago)
     run = FlakyTestRun(
         source_file=source,
@@ -165,7 +165,9 @@ def _seed_flaky_run(session, total=10, flaky=3, days_ago=0, source="ci.log"):
     return run
 
 
-def _seed_healed_selector(session, old="#broken", new="button.submit", valid=True):
+def _seed_healed_selector(
+    session, old: str = "#broken", new: str = "button.submit", valid: bool = True
+):
     row = HealedSelector(
         description="Submit button",
         old_selector=old,
@@ -187,7 +189,7 @@ def _seed_healed_selector(session, old="#broken", new="button.submit", valid=Tru
 
 
 class TestServeIndex:
-    def test_should_return_200_with_html_content_type(self, client):
+    def test_should_return_200_with_html_content_type(self, client) -> None:
         test_client, _ = client
         response = test_client.get("/")
         assert response.status_code == 200
@@ -200,7 +202,7 @@ class TestServeIndex:
 
 
 class TestMetricsSummary:
-    def test_should_return_all_5_fields_matching_db_state(self, client, mem_session):
+    def test_should_return_all_5_fields_matching_db_state(self, client, mem_session) -> None:
         test_client, mem_engine = client
         Session = sessionmaker(bind=mem_engine, autoflush=False, autocommit=False)
         session = Session()
@@ -227,7 +229,7 @@ class TestMetricsSummary:
         assert data["flaky_runs_count"] >= 1
         assert data["healed_selectors_count"] >= 1
 
-    def test_should_return_zeros_when_db_is_empty(self, client):
+    def test_should_return_zeros_when_db_is_empty(self, client) -> None:
         test_client, _ = client
         response = test_client.get("/api/metrics/summary")
         assert response.status_code == 200
@@ -243,13 +245,13 @@ class TestMetricsSummary:
 
 
 class TestFlakyTrend:
-    def test_should_return_empty_array_when_db_is_empty(self, client):
+    def test_should_return_empty_array_when_db_is_empty(self, client) -> None:
         test_client, _ = client
         response = test_client.get("/api/flaky-tests/trend?days=30")
         assert response.status_code == 200
         assert response.json() == []
 
-    def test_should_return_only_rows_within_days_range(self, client, mem_engine):
+    def test_should_return_only_rows_within_days_range(self, client, mem_engine) -> None:
         test_client, _ = client
         Session = sessionmaker(bind=mem_engine, autoflush=False, autocommit=False)
         session = Session()
@@ -278,12 +280,12 @@ class TestFlakyTrend:
 
 
 class TestPagination:
-    def _seed_n_tests(self, session, n: int):
+    def _seed_n_tests(self, session, n: int) -> None:
         for i in range(n):
             _seed_generated_test(session, framework="playwright", tokens=100 + i)
         session.commit()
 
-    def test_should_return_2_items_with_limit_2_offset_0(self, client, mem_engine):
+    def test_should_return_2_items_with_limit_2_offset_0(self, client, mem_engine) -> None:
         test_client, _ = client
         Session = sessionmaker(bind=mem_engine)
         session = Session()
@@ -294,7 +296,7 @@ class TestPagination:
         assert response.status_code == 200
         assert len(response.json()) == 2
 
-    def test_should_return_next_2_items_with_limit_2_offset_2(self, client, mem_engine):
+    def test_should_return_next_2_items_with_limit_2_offset_2(self, client, mem_engine) -> None:
         test_client, _ = client
         Session = sessionmaker(bind=mem_engine)
         session = Session()
@@ -309,7 +311,7 @@ class TestPagination:
         second_ids = {r["id"] for r in second_page}
         assert first_ids.isdisjoint(second_ids), "Pages must not overlap"
 
-    def test_should_return_empty_array_when_offset_exceeds_total(self, client, mem_engine):
+    def test_should_return_empty_array_when_offset_exceeds_total(self, client, mem_engine) -> None:
         test_client, _ = client
         Session = sessionmaker(bind=mem_engine)
         session = Session()
@@ -360,6 +362,6 @@ class TestDbUnreachable:
             "/api/healed-selectors",
         ],
     )
-    def test_should_return_503_when_db_is_unreachable(self, unreachable_client, endpoint):
+    def test_should_return_503_when_db_is_unreachable(self, unreachable_client, endpoint) -> None:
         response = unreachable_client.get(endpoint)
         assert response.status_code == 503
