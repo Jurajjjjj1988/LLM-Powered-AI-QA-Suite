@@ -297,3 +297,51 @@ class TestSystemPromptSafety:
             assert text not in SYSTEM_PROMPT, (
                 f"User requirement text found in SYSTEM_PROMPT: {text!r}"
             )
+
+
+class TestClosedLoop:
+    """The generate → run → repair closed loop (generate_and_verify)."""
+
+    def _req(self, tmp_path):
+        return _playwright_request(output_file=tmp_path / "verified.spec.ts")
+
+    def test_should_stay_open_loop_when_no_base_url(self, generator, tmp_path):
+        result = generator.generate_and_verify(self._req(tmp_path), base_url=None)
+        assert result.execution_passed is None
+        assert result.repair_attempts == 0
+
+    def test_should_accept_a_green_first_run_without_repair(self, generator, tmp_path, mocker):
+        from common.test_runner import RunResult
+
+        mocker.patch(
+            "ai_test_generator.generate_tests.run_playwright_test",
+            return_value=RunResult(passed=True, passed_count=1, failed_count=0, output="1 passed"),
+        )
+        result = generator.generate_and_verify(self._req(tmp_path), base_url="https://example.com")
+        assert result.execution_passed is True
+        assert result.repair_attempts == 0
+
+    def test_should_repair_a_red_run_then_accept_the_green_rerun(self, generator, tmp_path, mocker):
+        from common.test_runner import RunResult
+
+        red = RunResult(passed=False, passed_count=0, failed_count=1, output="1 failed")
+        green = RunResult(passed=True, passed_count=1, failed_count=0, output="1 passed")
+        mocker.patch(
+            "ai_test_generator.generate_tests.run_playwright_test", side_effect=[red, green]
+        )
+        result = generator.generate_and_verify(self._req(tmp_path), base_url="https://example.com")
+        assert result.execution_passed is True
+        assert result.repair_attempts == 1
+
+    def test_should_give_up_after_max_repairs_on_a_persistently_red_test(
+        self, generator, tmp_path, mocker
+    ):
+        from common.test_runner import RunResult
+
+        red = RunResult(passed=False, passed_count=0, failed_count=1, output="1 failed")
+        mocker.patch("ai_test_generator.generate_tests.run_playwright_test", return_value=red)
+        result = generator.generate_and_verify(
+            self._req(tmp_path), base_url="https://example.com", max_repairs=2
+        )
+        assert result.execution_passed is False
+        assert result.repair_attempts == 2
