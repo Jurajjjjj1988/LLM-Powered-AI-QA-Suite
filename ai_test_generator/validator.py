@@ -41,8 +41,12 @@ class ValidationResult:
 def _validate_playwright(code: str) -> ValidationResult:
     reasons: list[str] = []
 
-    # Must import the test runner
-    if "import { test, expect }" not in code and "import {test, expect}" not in code:
+    # Must import test + expect from @playwright/test (any extra named imports allowed,
+    # e.g. `type Page, type Locator` for the page-object style).
+    if not re.search(
+        r"import\s*\{[^}]*\btest\b[^}]*\bexpect\b[^}]*\}\s*from\s*['\"]@playwright/test['\"]",
+        code,
+    ):
         reasons.append("Missing `import { test, expect } from '@playwright/test'`")
 
     # Count test( call-sites (handles `test(` and `test.only(` / `test.skip(`)
@@ -53,6 +57,12 @@ def _validate_playwright(code: str) -> ValidationResult:
     # Must have at least one expect assertion
     if "expect(" not in code:
         reasons.append("No `expect(` assertion found")
+
+    # layered-playwright-suite bar: stable selectors + web-first assertions only.
+    if ".nth(" in code:
+        reasons.append("Positional locator `.nth()` — use a semantic/stable locator instead")
+    if "waitForTimeout" in code:
+        reasons.append("Hard wait `waitForTimeout` — use a web-first assertion instead")
 
     return ValidationResult(passed=len(reasons) == 0, reasons=reasons)
 
