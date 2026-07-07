@@ -42,12 +42,12 @@ class TestValidCssSelectors:
             "div.container > .row:nth-child(2)",
         ],
     )
-    def test_should_accept_valid_css_selector(self, selector):
+    def test_should_accept_valid_css_selector(self, selector) -> None:
         result = validate_css_selector(selector)
         assert result.valid is True
         assert result.reason == ""
 
-    def test_should_return_true_for_bool_on_valid_selector(self):
+    def test_should_return_true_for_bool_on_valid_selector(self) -> None:
         result = validate_css_selector("button.submit")
         assert bool(result) is True
 
@@ -66,7 +66,7 @@ class TestXPathRejection:
             "//input[@type='text']",
         ],
     )
-    def test_should_reject_xpath_expression(self, xpath):
+    def test_should_reject_xpath_expression(self, xpath) -> None:
         result = validate_css_selector(xpath)
         assert result.valid is False
         assert "xpath" in result.reason.lower() or "css" in result.reason.lower()
@@ -78,21 +78,21 @@ class TestXPathRejection:
 
 
 class TestEmptyAndWhitespace:
-    def test_should_reject_empty_string(self):
+    def test_should_reject_empty_string(self) -> None:
         result = validate_css_selector("")
         assert result.valid is False
         assert "empty" in result.reason.lower()
 
-    def test_should_reject_whitespace_only_string(self):
+    def test_should_reject_whitespace_only_string(self) -> None:
         result = validate_css_selector("   \t\n  ")
         assert result.valid is False
 
-    def test_should_reject_none_literal_string(self):
+    def test_should_reject_none_literal_string(self) -> None:
         result = validate_css_selector("NONE")
         assert result.valid is False
         assert "none" in result.reason.lower()
 
-    def test_should_reject_none_lowercase(self):
+    def test_should_reject_none_lowercase(self) -> None:
         result = validate_css_selector("none")
         assert result.valid is False
 
@@ -103,14 +103,14 @@ class TestEmptyAndWhitespace:
 
 
 class TestLongSelectors:
-    def test_should_handle_512_char_selector_without_raising(self):
+    def test_should_handle_512_char_selector_without_raising(self) -> None:
         """512-char selector — validate_css_selector must not raise."""
         selector = "div." + "a" * 507  # 512 total
         result = validate_css_selector(selector)
         # Result may be valid or invalid but must never raise
         assert isinstance(result, SelectorValidationResult)
 
-    def test_should_handle_extreme_length_selector_without_raising(self):
+    def test_should_handle_extreme_length_selector_without_raising(self) -> None:
         """Extreme length — must not raise regardless of cssselect internals."""
         selector = "div." + "x" * 2000
         try:
@@ -126,20 +126,20 @@ class TestLongSelectors:
 
 
 class TestSelectorValidationResult:
-    def test_should_bool_false_when_valid_is_false(self):
+    def test_should_bool_false_when_valid_is_false(self) -> None:
         r = SelectorValidationResult(valid=False, reason="bad")
         assert bool(r) is False
 
-    def test_should_bool_true_when_valid_is_true(self):
+    def test_should_bool_true_when_valid_is_true(self) -> None:
         r = SelectorValidationResult(valid=True)
         assert bool(r) is True
 
-    def test_should_repr_include_valid_and_reason(self):
+    def test_should_repr_include_valid_and_reason(self) -> None:
         r = SelectorValidationResult(valid=False, reason="XPath")
         assert "False" in repr(r)
         assert "XPath" in repr(r)
 
-    def test_should_default_reason_to_empty_string(self):
+    def test_should_default_reason_to_empty_string(self) -> None:
         r = SelectorValidationResult(valid=True)
         assert r.reason == ""
 
@@ -162,7 +162,7 @@ class TestNeverRaiseContract:
             "::invalid-pseudo",
         ],
     )
-    def test_should_never_raise_exception_for_any_input(self, selector):
+    def test_should_never_raise_exception_for_any_input(self, selector) -> None:
         """validate_css_selector must return a result, never raise."""
         try:
             result = validate_css_selector(selector)
