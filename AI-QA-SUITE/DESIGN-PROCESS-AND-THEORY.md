@@ -107,19 +107,20 @@ A portfolio repo that *looked* finished but wasn't:
 - **`expire_on_commit=False` in the shared factory** (one place) over re-querying in every test — it matches how the code is actually used (read-after-write) and fixes the whole class at once.
 - **Backdated, unattributed commits, branch → PR → squash-merge** — the house style, enforced by the commit hook.
 
-### 4.5 What is NOT done (honest)
-- A full **type-hint pass** (still ~a third typed).
-- The **dashboard DI refactor** (13 skipped tests).
-- Wiring the **layered-playwright-suite** blueprint into the generator's Playwright *output* (so generated tests follow a senior page-object architecture).
-- The **new tools / closed loop** (Part 5).
+### 4.5 Follow-ups — now DONE (a later autonomous pass, PRs #4-#7)
+All four originally-deferred items were completed and merged:
+- **Dashboard DI refactor** — app import is side-effect-free (FastAPI `lifespan`) + routes use `Depends(get_db_session)` + tests inject an in-memory DB via `dependency_overrides` (StaticPool). The 13 skipped tests are green; a real `cast(x, Float)` SQL bug (the /trend 500) was fixed. **0 skipped.**
+- **Type-hint pass** — 100% of public functions carry a return type (AST-verified), via `autotyping` + hand-finish.
+- **Blueprint -> generator** — the Playwright prompt now emits a layered page-object test, enforced by a validator gate (rejects `.nth()` + `waitForTimeout`).
+- **Closed-loop generator (the flagship)** -- built; see Part 5.
 
 ---
 
 ## Part 5 — Roadmap: the closed loop & new tools
 
-The highest-leverage next move is one architectural piece: a **shared test-execution runner** in `common/`. Build it once (for a closed-loop generator) and it unlocks a whole tier:
+The key architectural piece is now BUILT: a **shared test-execution runner** (`common/test_runner.py`) with a trustworthy verdict parser, plus `TestGenerator.generate_and_verify()` (generate -> run -> repair, CLI `--url`). That runner is the lever the rest of the tier reuses:
 
-1. **Closed-loop generator** — generate → run in a browser → repair until green *(the flagship; mirrors PWmodernizer)*.
+1. **Closed-loop generator** — generate -> run -> repair until green. **DONE (the flagship).**
 2. **Coverage cartographer** — requirements → test traceability + gap finder (fintech-audit relevant).
 3. **Mutation sentinel** — mutation testing to score test *effectiveness* (Part 2.7).
 4. **Healer verify-loop** — actually run the healed selector and confirm it resolves the right node.
@@ -139,4 +140,4 @@ python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 ai-test-generator generate "User can reset password" --framework playwright
 ```
 
-**Current honest state:** the hardest part — a totally broken test suite + a lint-flooded, collision-ridden codebase → **packaged, ruff-clean, 128 green tests, professional project setup** — is done. The remaining work (types, the closed loop, the dashboard refactor) is scoped and named, not hidden.
+**Current state:** from a totally broken test suite + a lint-flooded, collision-ridden codebase to **packaged, ruff-clean, 155 green tests (0 skipped), 100% return-typed, a working closed loop, and a professional project setup**. The remaining work is the OTHER new tools (mutation-sentinel, coverage-cartographer, healer verify-loop, triage-bot, prompt-guardian) — all of which reuse the runner built here.
