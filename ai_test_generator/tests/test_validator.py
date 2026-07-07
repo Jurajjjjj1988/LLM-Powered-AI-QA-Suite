@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import pytest
 
-from ai_test_generator.validator import validate_generated_code
+from ai_test_generator.validator import validate_generated_code, validate_ticket_coverage
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -284,3 +284,36 @@ class TestPlaywrightBlueprintBar:
         result = validate_generated_code(code, "playwright")
         assert result.passed is False
         assert any("wait" in r.lower() for r in result.reasons)
+
+
+class TestTicketCoverageGate:
+    """validate_ticket_coverage: enough tests + per-criterion AC tags + whole-token key."""
+
+    _GOOD = (
+        "test.describe('AB-1: Login', () => {\n"
+        "  test('AC1: valid login', async ({ page }) => {});\n"
+        "  test('AC2: invalid login', async ({ page }) => {});\n"
+        "});\n"
+    )
+
+    def test_should_pass_when_every_criterion_is_tagged_and_key_present(self) -> None:
+        assert validate_ticket_coverage(self._GOOD, "playwright", 2, "AB-1").passed
+
+    def test_should_fail_when_a_criterion_tag_is_missing(self) -> None:
+        # Two tests present, but AC2 is never tagged — a count-only check would miss this.
+        code = (
+            "test.describe('AB-1: Login', () => {\n"
+            "  test('AC1: valid login', async ({ page }) => {});\n"
+            "  test('some other test', async ({ page }) => {});\n"
+            "});\n"
+        )
+        result = validate_ticket_coverage(code, "playwright", 2, "AB-1")
+        assert not result.passed
+        assert any("AC2" in r for r in result.reasons)
+
+    def test_should_not_accept_a_key_that_only_appears_as_a_substring(self) -> None:
+        # Code mentions AB-12, but the ticket key is AB-1 — must NOT count as traceable.
+        code = "test('AC1: thing', async ({ page }) => {});  // relates to AB-12\n"
+        result = validate_ticket_coverage(code, "playwright", 1, "AB-1")
+        assert not result.passed
+        assert any("AB-1" in r for r in result.reasons)

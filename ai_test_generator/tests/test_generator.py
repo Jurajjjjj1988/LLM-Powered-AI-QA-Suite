@@ -345,3 +345,82 @@ class TestClosedLoop:
         )
         assert result.execution_passed is False
         assert result.repair_attempts == 2
+
+
+class TestGenerateFromTicket:
+    """generate_from_ticket: acceptance criteria in, traceable tests out (the real purpose)."""
+
+    # Traceable output: references the ticket key + one test() per criterion.
+    _TRACEABLE = (
+        "import { test, expect } from '@playwright/test';\n"
+        "test.describe('PROJ-1: Reset password', () => {\n"
+        "  test('AC1: valid email sends a reset link', async ({ page }) => {\n"
+        "    await expect(page.getByRole('alert')).toBeVisible();\n"
+        "  });\n"
+        "});\n"
+    )
+
+    def _request(self, criteria=None, key="PROJ-1", **kw):
+        from common.schemas import GenerateFromTicketRequest, JiraTicket
+
+        ticket = JiraTicket(
+            key=key,
+            summary="Reset password",
+            description="A user can reset their password by email.",
+            acceptance_criteria=criteria or ["Valid email sends a reset link"],
+            definition_of_done=[],
+        )
+        return GenerateFromTicketRequest(ticket=ticket, framework="playwright", **kw)
+
+    def test_should_pass_coverage_when_key_and_enough_tests_present(self, generator) -> None:
+        generator._client.complete.return_value = (self._TRACEABLE, 200)
+        response = generator.generate_from_ticket(self._request())
+        assert response.validation_passed is True
+        assert "PROJ-1" in response.generated_code
+
+    def test_should_fail_coverage_when_fewer_tests_than_criteria(self, generator) -> None:
+        # One test() emitted, but the ticket has three acceptance criteria.
+        generator._client.complete.return_value = (self._TRACEABLE, 200)
+        request = self._request(criteria=["one thing", "two thing", "three thing"], use_cache=False)
+        response = generator.generate_from_ticket(request)
+        assert response.validation_passed is False
+
+    def test_should_fail_coverage_when_key_not_referenced(self, generator) -> None:
+        # Code references PROJ-1, but the ticket key is ZZZ-9 → not traceable.
+        generator._client.complete.return_value = (self._TRACEABLE, 200)
+        response = generator.generate_from_ticket(self._request(key="ZZZ-9", use_cache=False))
+        assert response.validation_passed is False
+
+    def test_should_close_the_loop_from_a_ticket(self, generator, tmp_path, mocker) -> None:
+        from common.test_runner import RunResult
+
+        generator._client.complete.return_value = (self._TRACEABLE, 200)
+        mocker.patch(
+            "ai_test_generator.generate_tests.run_playwright_test",
+            return_value=RunResult(passed=True, passed_count=1, failed_count=0, output="1 passed"),
+        )
+        request = self._request(output_file=tmp_path / "suite.spec.ts", use_cache=False)
+        result = generator.generate_and_verify_from_ticket(request, base_url="https://example.com")
+        assert result.execution_passed is True
+
+
+class TestTicketPrompt:
+    """The ticket prompt must surface EVERY criterion + demand traceability."""
+
+    def test_should_list_every_acceptance_criterion_and_the_key(self) -> None:
+        from ai_test_generator.prompts import build_ticket_user_message
+
+        msg = build_ticket_user_message(
+            key="PROJ-5",
+            summary="Checkout",
+            description="Guest checkout flow.",
+            acceptance_criteria=["adds item to cart", "applies a discount code"],
+            definition_of_done=["works on mobile"],
+            framework="playwright",
+        )
+        assert "PROJ-5" in msg
+        assert "adds item to cart" in msg
+        assert "applies a discount code" in msg
+        assert "works on mobile" in msg
+        # demands one test per criterion + traceability
+        assert "AC1" in msg and "AC2" in msg

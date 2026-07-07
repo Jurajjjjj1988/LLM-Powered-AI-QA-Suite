@@ -14,6 +14,36 @@ class GenerateTestsRequest(BaseModel):
     use_cache: bool = True
 
 
+class JiraTicket(BaseModel):
+    """A work item (Jira issue / GitHub issue) as the source of truth for tests.
+
+    The tool generates one traceable test per acceptance criterion, so the
+    acceptance_criteria list is REQUIRED and must be non-empty — a ticket with no
+    criteria has nothing to verify.
+    """
+
+    key: str = Field(..., min_length=1, max_length=64)
+    summary: str = Field(..., min_length=1, max_length=500)
+    description: str = Field(default="", max_length=20000)
+    acceptance_criteria: list[str] = Field(..., min_length=1, max_length=200)
+    definition_of_done: list[str] = Field(default_factory=list, max_length=200)
+
+    @field_validator("acceptance_criteria", "definition_of_done")
+    @classmethod
+    def _bound_item_length(cls, v: list[str]) -> list[str]:
+        # Cap each entry so an adversarial ticket can't send an unbounded paid prompt.
+        return [item[:2000] for item in v]
+
+
+class GenerateFromTicketRequest(BaseModel):
+    """Generate tests FROM a structured ticket (the tool's real purpose)."""
+
+    ticket: JiraTicket
+    framework: Literal["playwright", "cypress", "selenium"] = "playwright"
+    output_file: Path | None = None
+    use_cache: bool = True
+
+
 class GenerateTestsResponse(BaseModel):
     id: int
     generated_code: str
