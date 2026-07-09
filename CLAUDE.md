@@ -8,7 +8,7 @@ Six independent AI-QA tools, each a small Python package with a `cli.py`, SQLite
 
 | Tool | What it does |
 | --- | --- |
-| `ai-test-generator` | English requirement → Playwright / Cypress / Selenium test code (caches by requirement hash) |
+| `ai-test-generator` | a Jira/GitHub **ticket's acceptance criteria** (`from-jira`) — or a free-text requirement (`generate`) → one traceable Playwright / Cypress / Selenium test per criterion, run + repaired via the closed loop |
 | `ai-test-analyzer` | Flaky-test detection + AI root-cause from test logs (batched, structured Pydantic output) |
 | `ai-test-healer` | Heals broken selectors against changed DOM |
 | `ai-debug-accelerator` | AI-assisted failure debugging |

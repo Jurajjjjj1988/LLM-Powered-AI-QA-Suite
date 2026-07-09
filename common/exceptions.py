@@ -20,3 +20,7 @@ class DatabaseError(QASuiteError):
 
 class SanitizationError(QASuiteError):
     """Raised when input fails sanitization."""
+
+
+class TicketParseError(QASuiteError):
+    """Raised when a pasted/fetched ticket has no extractable acceptance criteria."""
