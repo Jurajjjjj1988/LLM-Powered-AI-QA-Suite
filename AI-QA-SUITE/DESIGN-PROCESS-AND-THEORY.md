@@ -10,7 +10,7 @@ The **LLM-Powered AI QA Suite** is a portfolio of **six AI-powered QA tools** bu
 
 | Tool | Problem it solves | AI role |
 | --- | --- | --- |
-| `ai-test-generator` | Writing E2E tests by hand is slow | English requirement → Playwright/Cypress/Selenium code |
+| `ai-test-generator` | Tests written from a vague one-liner, not the ticket's real criteria | a **ticket's acceptance criteria** (or a free-text requirement) → one traceable test per criterion, run + repaired |
 | `ai-test-analyzer` | Flaky tests erode trust in CI | detect flakiness from logs + root-cause + fix suggestions |
 | `ai-test-healer` | UI changes break selectors | propose a working selector against the new DOM |
 | `ai-debug-accelerator` | Failure triage is manual | likely cause + next step from a failure log |
@@ -41,13 +41,20 @@ Every external call (Anthropic, DB) is wrapped with **tenacity** retry on transi
 ### 2.6 The open-loop vs closed-loop frontier  ← the big idea
 Today all six tools are **open-loop**: they read a static input (a log, a DOM snippet, a schema) and emit an answer. Nothing *runs* the test it wrote or *verifies* the selector it healed. Reviewers spot open-loop AI instantly ("it wrote code but never ran it").
 
-The frontier — and the strongest next step — is the **closed loop**: `generate → run → observe the failure → repair → re-run, until it actually passes`. That is the proven pattern from the sibling project **PWmodernizer**, where a migration is accepted *only* when it runs green against the real app. Self-healing research frames the same idea as a three-step **context → evaluate → validate** loop: without the *validate* step, "self-healing" is just guessing.
+The frontier — and the strongest next step — is the **closed loop**: `generate → run → observe the failure → repair → re-run, until it actually passes`. The discipline is that output is accepted *only* when it runs green against the real app. Self-healing research frames the same idea as a three-step **context → evaluate → validate** loop: without the *validate* step, "self-healing" is just guessing.
 
 ### 2.7 Test *effectiveness*, not just test *count*
 An LLM can write tests that pass but don't catch bugs. The trust metric the literature blesses (Meta's ACH, Atlassian's mutation assistant) is **mutation testing**: inject a small bug into the source, and if the test still passes, the test is worthless. "Do these tests catch bugs?" is a stronger question than "do they pass?" — a planned `ai-mutation-sentinel` tool would answer it.
 
 ### 2.8 Gates as calibrated trust
 Quality isn't a vibe; it's **proven gates**. `ruff` (lint), `pytest` (behaviour), and structured validation each catch a class of defect deterministically. A green gate you've proven correct lets each run self-certify — you trust the gate, not a manual review of every output.
+
+### 2.9 Tests come from acceptance criteria, not a paraphrase  ← the correctness anchor
+A test generated from *"user can log in"* is only as good as that vague sentence. Real, valuable tests come from a work item's **acceptance criteria** — the concrete, checkable statements a feature must satisfy. So `ai-test-generator` reads a real **ticket** (a Jira export, or a `gh issue view` GitHub issue — a GitHub issue *is* a git-hosted ticket, so no Jira token is needed) and generates **one traceable test per criterion**, each tagged `AC1…ACn` under the ticket key. Two consequences make this trustworthy rather than cosmetic:
+- **Parsing is deterministic + defensive.** A dedicated parser turns messy markdown (headings by `#`/`**bold**`/`:`, bullets/numbers/`- [ ]` checkboxes, wrapped lines, indented sub-bullets, fenced code blocks) into structured criteria — and a ticket with *no* acceptance criteria is **rejected**, not faked into a hollow test. (This parser was hardened by an adversarial multi-agent review that confirmed and fixed 18 real defects — e.g. a criterion ending in `:` being mistaken for a heading, or `ISO-8601` being mistaken for a ticket key.)
+- **Coverage is gated.** A `validate_ticket_coverage` check fails any generation with fewer tests than criteria, or one that doesn't reference each `AC<i>` tag and the ticket key — so "good tests, not bad tests" is *enforced*, not hoped for.
+
+This is the difference between an autocomplete toy and a tool a QA engineer would trust: the ticket is the source of truth, and traceability is verified.
 
 ---
 
@@ -136,8 +143,12 @@ Runner-once → tools 1, 3, 4, 5 all ride it. That is the single biggest structu
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 .venv/bin/ruff check .            # clean
-.venv/bin/pytest -q               # 128 passed, 13 skipped (documented)
+.venv/bin/pytest -q               # 183 passed, 0 skipped
+# from a ticket (the real workflow) — a GitHub issue is a git-hosted ticket:
+gh issue view 42 --repo owner/repo > TICKET.md
+ai-test-generator from-jira TICKET.md --output-file suite.spec.ts --url https://app
+# or from a free-text requirement:
 ai-test-generator generate "User can reset password" --framework playwright
 ```
 
-**Current state:** from a totally broken test suite + a lint-flooded, collision-ridden codebase to **packaged, ruff-clean, 155 green tests (0 skipped), 100% return-typed, a working closed loop, and a professional project setup**. The remaining work is the OTHER new tools (mutation-sentinel, coverage-cartographer, healer verify-loop, triage-bot, prompt-guardian) — all of which reuse the runner built here.
+**Current state:** from a totally broken test suite + a lint-flooded, collision-ridden codebase to **packaged, ruff-clean, 183 green tests (0 skipped), 100% return-typed, ticket-driven generation with a coverage gate, a working closed loop, and a professional project setup**. The remaining work is the OTHER new tools (mutation-sentinel, coverage-cartographer, healer verify-loop, triage-bot, prompt-guardian) — all of which reuse the runner built here.

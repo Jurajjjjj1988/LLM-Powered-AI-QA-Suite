@@ -63,7 +63,7 @@ Written to: cart.spec.ts
 Closed loop: execution=GREEN  repairs=1
 ```
 
-A **red** run feeds the real failure output back to the model, re-writes the spec, and re-runs — accepting only a *genuine* pass (`exit 0` AND `≥1 passed` AND `0 failed/flaky/timed-out`). A bare `"passed"` in a title, or an all-skipped run, never counts as green — the same false-green defence proven in the sibling [PWmodernizer](https://github.com/Jurajjjjj1988/PWmodernizer).
+A **red** run feeds the real failure output back to the model, re-writes the spec, and re-runs — accepting only a *genuine* pass (`exit 0` AND `≥1 passed` AND `0 failed/flaky/timed-out`). A bare `"passed"` in a title, or an all-skipped run, never counts as green — a deliberate false-green defence.
 
 ## From a ticket (the real workflow)
 
